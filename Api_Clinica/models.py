@@ -46,6 +46,9 @@ class Medico(models.Model):
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} ({self.especialidad.nombre})"
+    
+    def get_full_name(self):
+        return f"{self.nombre} {self.apellido}"
 
     class Meta:
         verbose_name = "Médico"
@@ -67,6 +70,9 @@ class Paciente(models.Model):
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} ({self.rut})"
+    
+    def get_full_name(self):
+        return f"{self.nombre} {self.apellido}"
 
     class Meta:
         verbose_name = "Paciente"

@@ -23,6 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Incluye las URLs de tu aplicación Api_Clinica bajo el prefijo 'api/'
     path('api/', include('Api_Clinica.urls')),
+    # URLs para las vistas HTML (las colocamos directamente en la raíz para simplicidad de navegación)
+    path('', include('Api_Clinica.web_urls')),
 
     # URLs para la documentación de la API (drf-yasg)
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

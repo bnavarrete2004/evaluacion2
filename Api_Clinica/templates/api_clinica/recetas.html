@@ -1,0 +1,392 @@
+{% extends 'api_clinica/base.html' %}
+
+{% block title %}Recetas - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Gestión de Recetas Médicas</h5>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#recetaModal" data-mode="create">
+                    <i class="fas fa-plus-circle me-2"></i>Nueva Receta
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <div class="d-flex">
+                        <label for="filterConsulta" class="form-label me-2 mb-0 align-self-center">Filtrar por Consulta:</label>
+                        <select class="form-select me-2" id="filterConsulta" style="width: 250px;">
+                            <option value="">Todas</option>
+                            <!-- Opciones de consultas se cargarán aquí -->
+                        </select>
+                        <label for="filterMedicamento" class="form-label me-2 mb-0 align-self-center">Filtrar por Medicamento:</label>
+                        <select class="form-select me-2" id="filterMedicamento" style="width: 200px;">
+                            <option value="">Todos</option>
+                            <!-- Opciones de medicamentos se cargarán aquí -->
+                        </select>
+                        <button class="btn btn-primary" type="button" id="applyFiltersButton">Aplicar Filtros</button>
+                    </div>
+                    <div class="input-group w-25">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por instrucciones, diagnóstico...">
+                        <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Consulta ID</th>
+                                <th>Paciente</th>
+                                <th>Médico</th>
+                                <th>Medicamento</th>
+                                <th>Cantidad</th>
+                                <th>Fecha Receta</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recetasTableBody">
+                            <!-- Los datos se cargarán aquí con JavaScript -->
+                            <tr>
+                                <td colspan="8" class="text-center">Cargando recetas...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Receta -->
+<div class="modal fade" id="recetaModal" tabindex="-1" aria-labelledby="recetaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recetaModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="recetaForm">
+                    <input type="hidden" id="recetaId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="consulta" class="form-label">Consulta Médica</label>
+                            <select class="form-select" id="consulta" name="consulta" required>
+                                <!-- Opciones de consultas se cargarán aquí -->
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="medicamento" class="form-label">Medicamento</label>
+                            <select class="form-select" id="medicamento" name="medicamento" required>
+                                <!-- Opciones de medicamentos se cargarán aquí -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cantidad" class="form-label">Cantidad</label>
+                        <input type="text" class="form-control" id="cantidad" name="cantidad" placeholder="Ej: '10 tabletas', '1 frasco'" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="instrucciones" class="form-label">Instrucciones</label>
+                        <textarea class="form-control" id="instrucciones" name="instrucciones" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fechaReceta" class="form-label">Fecha de Receta</label>
+                        <input type="date" class="form-control" id="fechaReceta" name="fecha_receta" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="recetaForm" class="btn btn-primary" id="saveRecetaBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const API_BASE_URL = '/api/recetas/';
+    const CONSULTAS_API_URL = '/api/consultas/';
+    const MEDICAMENTOS_API_URL = '/api/medicamentos/';
+
+    const recetasTableBody = document.getElementById('recetasTableBody');
+    const recetaModal = new bootstrap.Modal(document.getElementById('recetaModal'));
+    const recetaModalLabel = document.getElementById('recetaModalLabel');
+    const recetaForm = document.getElementById('recetaForm');
+    const recetaIdInput = document.getElementById('recetaId');
+    const consultaSelect = document.getElementById('consulta');
+    const medicamentoSelect = document.getElementById('medicamento');
+    const cantidadInput = document.getElementById('cantidad');
+    const instruccionesInput = document.getElementById('instrucciones');
+    const fechaRecetaInput = document.getElementById('fechaReceta');
+    const saveRecetaBtn = document.getElementById('saveRecetaBtn');
+
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const filterConsultaSelect = document.getElementById('filterConsulta');
+    const filterMedicamentoSelect = document.getElementById('filterMedicamento');
+    const applyFiltersButton = document.getElementById('applyFiltersButton');
+
+    let currentMode = 'create';
+    let currentRecetaId = null;
+
+    /**
+     * @brief Carga las consultas y medicamentos para los selectores del formulario y filtro.
+     */
+    async function loadForeignKeysForSelects() {
+        try {
+            const [consultasResponse, medicamentosResponse] = await Promise.all([
+                axios.get(CONSULTAS_API_URL),
+                axios.get(MEDICAMENTOS_API_URL)
+            ]);
+
+            const consultas = consultasResponse.data;
+            const medicamentos = medicamentosResponse.data;
+
+            // Limpiar y poblar select de consultas (formulario y filtro)
+            consultaSelect.innerHTML = '<option value="">Seleccione una consulta</option>';
+            filterConsultaSelect.innerHTML = '<option value="">Todas</option>';
+            consultas.forEach(c => {
+                const optionText = `ID: ${c.id} | P: ${c.paciente_nombre_completo} | F: ${new Date(c.fecha_consulta).toLocaleDateString()}`;
+                
+                const optionForm = document.createElement('option');
+                optionForm.value = c.id;
+                optionForm.textContent = optionText;
+                consultaSelect.appendChild(optionForm);
+
+                const optionFilter = document.createElement('option');
+                optionFilter.value = c.id;
+                optionFilter.textContent = optionText;
+                filterConsultaSelect.appendChild(optionFilter);
+            });
+
+            // Limpiar y poblar select de medicamentos (formulario y filtro)
+            medicamentoSelect.innerHTML = '<option value="">Seleccione un medicamento</option>';
+            filterMedicamentoSelect.innerHTML = '<option value="">Todos</option>';
+            medicamentos.forEach(m => {
+                const optionForm = document.createElement('option');
+                optionForm.value = m.id;
+                optionForm.textContent = `${m.nombre_comercial} (${m.presentacion})`;
+                medicamentoSelect.appendChild(optionForm);
+
+                const optionFilter = document.createElement('option');
+                optionFilter.value = m.id;
+                optionFilter.textContent = `${m.nombre_comercial} (${m.presentacion})`;
+                filterMedicamentoSelect.appendChild(optionFilter);
+            });
+
+        } catch (error) {
+            console.error('Error al cargar consultas o medicamentos:', error);
+            alert('Error al cargar la lista de consultas o medicamentos.');
+        }
+    }
+
+    /**
+     * @brief Carga las recetas desde la API y las renderiza en la tabla.
+     * @param {object} filters - Objeto con filtros para la API.
+     */
+    async function loadRecetas(filters = {}) {
+        try {
+            let url = API_BASE_URL;
+            const params = new URLSearchParams();
+            if (filters.search) params.append('search', filters.search);
+            if (filters.consulta) params.append('consulta', filters.consulta);
+            if (filters.medicamento) params.append('medicamento', filters.medicamento);
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const response = await axios.get(url);
+            const recetas = response.data;
+            renderRecetas(recetas);
+        } catch (error) {
+            console.error('Error al cargar recetas:', error);
+            recetasTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Error al cargar las recetas.</td></tr>`;
+        }
+    }
+
+    /**
+     * @brief Renderiza la lista de recetas en la tabla HTML.
+     * @param {Array} recetas - Lista de objetos de receta.
+     */
+    function renderRecetas(recetas) {
+        recetasTableBody.innerHTML = '';
+        if (recetas.length === 0) {
+            recetasTableBody.innerHTML = `<tr><td colspan="8" class="text-center">No hay recetas registradas.</td></tr>`;
+            return;
+        }
+        recetas.forEach(receta => {
+            const row = recetasTableBody.insertRow();
+            row.innerHTML = `
+                <td>${receta.id}</td>
+                <td>${receta.consulta || 'N/A'}</td>
+                <td>${receta.consulta_paciente_nombre_completo || 'N/A'}</td>
+                <td>${receta.consulta_medico_nombre_completo || 'N/A'}</td>
+                <td>${receta.medicamento_nombre_comercial || 'N/A'}</td>
+                <td>${receta.cantidad || 'N/A'}</td>
+                <td>${receta.fecha_receta || 'N/A'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${receta.id}" data-bs-toggle="modal" data-bs-target="#recetaModal" data-mode="edit">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-btn" data-id="${receta.id}">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                </td>
+            `;
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', handleEditClick);
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Editar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleEditClick(event) {
+        currentMode = 'edit';
+        currentRecetaId = event.currentTarget.dataset.id;
+        recetaModalLabel.textContent = 'Editar Receta';
+
+        try {
+            const response = await axios.get(`${API_BASE_URL}${currentRecetaId}/`);
+            const receta = response.data;
+            
+            consultaSelect.value = receta.consulta;
+            medicamentoSelect.value = receta.medicamento;
+            cantidadInput.value = receta.cantidad;
+            instruccionesInput.value = receta.instrucciones;
+            fechaRecetaInput.value = receta.fecha_receta;
+
+            recetaIdInput.value = receta.id;
+        } catch (error) {
+            console.error('Error al cargar datos de receta para editar:', error);
+            alert('Error al cargar los datos de la receta.');
+        }
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Eliminar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleDeleteClick(event) {
+        const id = event.currentTarget.dataset.id;
+        if (confirm(`¿Estás seguro de que quieres eliminar la receta con ID ${id}?`)) {
+            try {
+                await axios.delete(`${API_BASE_URL}${id}/`);
+                alert('Receta eliminada correctamente.');
+                loadRecetas({
+                    search: searchInput.value,
+                    consulta: filterConsultaSelect.value,
+                    medicamento: filterMedicamentoSelect.value
+                });
+            } catch (error) {
+                console.error('Error al eliminar receta:', error);
+                alert('Error al eliminar la receta.');
+            }
+        }
+    }
+
+    /**
+     * @brief Maneja el envío del formulario para crear o actualizar una receta.
+     * @param {Event} event - El evento de envío del formulario.
+     */
+    recetaForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const data = {
+            consulta: consultaSelect.value,
+            medicamento: medicamentoSelect.value,
+            cantidad: cantidadInput.value,
+            instrucciones: instruccionesInput.value,
+            fecha_receta: fechaRecetaInput.value,
+        };
+
+        try {
+            if (currentMode === 'create') {
+                await axios.post(API_BASE_URL, data);
+                alert('Receta creada correctamente.');
+            } else { // currentMode === 'edit'
+                await axios.put(`${API_BASE_URL}${currentRecetaId}/`, data);
+                alert('Receta actualizada correctamente.');
+            }
+            recetaModal.hide();
+            recetaForm.reset();
+            loadRecetas({
+                search: searchInput.value,
+                consulta: filterConsultaSelect.value,
+                medicamento: filterMedicamentoSelect.value
+            });
+        } catch (error) {
+            console.error('Error al guardar receta:', error.response ? error.response.data : error.message);
+            const errorMessage = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Error desconocido';
+            alert(`Error al guardar la receta: ${errorMessage}`);
+        }
+    });
+
+    /**
+     * @brief Reinicia el formulario y el modo del modal al abrirlo en modo "crear".
+     */
+    document.getElementById('recetaModal').addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const mode = button.getAttribute('data-mode');
+
+        if (mode === 'create') {
+            currentMode = 'create';
+            currentRecetaId = null;
+            recetaModalLabel.textContent = 'Crear Nueva Receta';
+            recetaForm.reset();
+            recetaIdInput.value = '';
+            consultaSelect.value = '';
+            medicamentoSelect.value = '';
+            fechaRecetaInput.value = new Date().toISOString().slice(0, 10); // Fecha actual por defecto
+        }
+    });
+
+    // Manejar la búsqueda
+    searchButton.addEventListener('click', () => {
+        loadRecetas({
+            search: searchInput.value,
+            consulta: filterConsultaSelect.value,
+            medicamento: filterMedicamentoSelect.value
+        });
+    });
+
+    searchInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            loadRecetas({
+                search: searchInput.value,
+                consulta: filterConsultaSelect.value,
+                medicamento: filterMedicamentoSelect.value
+            });
+        }
+    });
+
+    // Manejar la aplicación de filtros
+    applyFiltersButton.addEventListener('click', () => {
+        loadRecetas({
+            search: searchInput.value,
+            consulta: filterConsultaSelect.value,
+            medicamento: filterMedicamentoSelect.value
+        });
+    });
+
+
+    // Cargar consultas, medicamentos y recetas al inicio
+    document.addEventListener('DOMContentLoaded', () => {
+        loadForeignKeysForSelects();
+        loadRecetas();
+    });
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}

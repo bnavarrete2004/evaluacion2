@@ -1,0 +1,279 @@
+{% extends 'api_clinica/base.html' %}
+
+{% block title %}Medicamentos - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Gestión de Medicamentos</h5>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#medicamentoModal" data-mode="create">
+                    <i class="fas fa-plus-circle me-2"></i>Nuevo Medicamento
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 d-flex justify-content-end">
+                    <div class="input-group w-25">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, principio activo...">
+                        <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre Comercial</th>
+                                <th>Principio Activo</th>
+                                <th>Presentación</th>
+                                <th>Dosis</th>
+                                <th>Fabricante</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medicamentosTableBody">
+                            <!-- Los datos se cargarán aquí con JavaScript -->
+                            <tr>
+                                <td colspan="7" class="text-center">Cargando medicamentos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Medicamento -->
+<div class="modal fade" id="medicamentoModal" tabindex="-1" aria-labelledby="medicamentoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="medicamentoModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="medicamentoForm">
+                    <input type="hidden" id="medicamentoId">
+                    <div class="mb-3">
+                        <label for="nombreComercial" class="form-label">Nombre Comercial</label>
+                        <input type="text" class="form-control" id="nombreComercial" name="nombre_comercial" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="principioActivo" class="form-label">Principio Activo</label>
+                        <input type="text" class="form-control" id="principioActivo" name="principio_activo" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="presentacion" class="form-label">Presentación (Ej: "Comprimidos 500mg", "Jarabe 100ml")</label>
+                        <input type="text" class="form-control" id="presentacion" name="presentacion" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dosis" class="form-label">Dosis (Ej: "500 mg", "10 ml", "1 tableta")</label>
+                        <input type="text" class="form-control" id="dosis" name="dosis" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fabricante" class="form-label">Fabricante (opcional)</label>
+                        <input type="text" class="form-control" id="fabricante" name="fabricante">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="medicamentoForm" class="btn btn-primary" id="saveMedicamentoBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const API_BASE_URL = '/api/medicamentos/';
+    const medicamentosTableBody = document.getElementById('medicamentosTableBody');
+    const medicamentoModal = new bootstrap.Modal(document.getElementById('medicamentoModal'));
+    const medicamentoModalLabel = document.getElementById('medicamentoModalLabel');
+    const medicamentoForm = document.getElementById('medicamentoForm');
+    const medicamentoIdInput = document.getElementById('medicamentoId');
+    const nombreComercialInput = document.getElementById('nombreComercial');
+    const principioActivoInput = document.getElementById('principioActivo');
+    const presentacionInput = document.getElementById('presentacion');
+    const dosisInput = document.getElementById('dosis');
+    const fabricanteInput = document.getElementById('fabricante');
+    const saveMedicamentoBtn = document.getElementById('saveMedicamentoBtn');
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+
+    let currentMode = 'create';
+    let currentMedicamentoId = null;
+
+    /**
+     * @brief Carga los medicamentos desde la API y los renderiza en la tabla.
+     * @param {object} filters - Objeto con filtros para la API (solo 'search' en este caso).
+     */
+    async function loadMedicamentos(filters = {}) {
+        try {
+            let url = API_BASE_URL;
+            const params = new URLSearchParams();
+            if (filters.search) params.append('search', filters.search);
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const response = await axios.get(url);
+            const medicamentos = response.data;
+            renderMedicamentos(medicamentos);
+        } catch (error) {
+            console.error('Error al cargar medicamentos:', error);
+            medicamentosTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error al cargar los medicamentos.</td></tr>`;
+        }
+    }
+
+    /**
+     * @brief Renderiza la lista de medicamentos en la tabla HTML.
+     * @param {Array} medicamentos - Lista de objetos de medicamento.
+     */
+    function renderMedicamentos(medicamentos) {
+        medicamentosTableBody.innerHTML = '';
+        if (medicamentos.length === 0) {
+            medicamentosTableBody.innerHTML = `<tr><td colspan="7" class="text-center">No hay medicamentos registrados.</td></tr>`;
+            return;
+        }
+        medicamentos.forEach(medicamento => {
+            const row = medicamentosTableBody.insertRow();
+            row.innerHTML = `
+                <td>${medicamento.id}</td>
+                <td>${medicamento.nombre_comercial}</td>
+                <td>${medicamento.principio_activo}</td>
+                <td>${medicamento.presentacion}</td>
+                <td>${medicamento.dosis}</td>
+                <td>${medicamento.fabricante || 'N/A'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${medicamento.id}" data-bs-toggle="modal" data-bs-target="#medicamentoModal" data-mode="edit">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-btn" data-id="${medicamento.id}">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                </td>
+            `;
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', handleEditClick);
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Editar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleEditClick(event) {
+        currentMode = 'edit';
+        currentMedicamentoId = event.currentTarget.dataset.id;
+        medicamentoModalLabel.textContent = 'Editar Medicamento';
+
+        try {
+            const response = await axios.get(`${API_BASE_URL}${currentMedicamentoId}/`);
+            const medicamento = response.data;
+            nombreComercialInput.value = medicamento.nombre_comercial;
+            principioActivoInput.value = medicamento.principio_activo;
+            presentacionInput.value = medicamento.presentacion;
+            dosisInput.value = medicamento.dosis;
+            fabricanteInput.value = medicamento.fabricante;
+            medicamentoIdInput.value = medicamento.id;
+        } catch (error) {
+            console.error('Error al cargar datos de medicamento para editar:', error);
+            alert('Error al cargar los datos del medicamento.');
+        }
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Eliminar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleDeleteClick(event) {
+        const id = event.currentTarget.dataset.id;
+        if (confirm(`¿Estás seguro de que quieres eliminar el medicamento con ID ${id}?`)) {
+            try {
+                await axios.delete(`${API_BASE_URL}${id}/`);
+                alert('Medicamento eliminado correctamente.');
+                loadMedicamentos({ search: searchInput.value });
+            } catch (error) {
+                console.error('Error al eliminar medicamento:', error);
+                alert('Error al eliminar el medicamento. Podría estar asociado a recetas.');
+            }
+        }
+    }
+
+    /**
+     * @brief Maneja el envío del formulario para crear o actualizar un medicamento.
+     * @param {Event} event - El evento de envío del formulario.
+     */
+    medicamentoForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const data = {
+            nombre_comercial: nombreComercialInput.value,
+            principio_activo: principioActivoInput.value,
+            presentacion: presentacionInput.value,
+            dosis: dosisInput.value,
+            fabricante: fabricanteInput.value || null, // Enviar null si está vacío
+        };
+
+        try {
+            if (currentMode === 'create') {
+                await axios.post(API_BASE_URL, data);
+                alert('Medicamento creado correctamente.');
+            } else { // currentMode === 'edit'
+                await axios.put(`${API_BASE_URL}${currentMedicamentoId}/`, data);
+                alert('Medicamento actualizado correctamente.');
+            }
+            medicamentoModal.hide();
+            medicamentoForm.reset();
+            loadMedicamentos({ search: searchInput.value });
+        } catch (error) {
+            console.error('Error al guardar medicamento:', error.response ? error.response.data : error.message);
+            const errorMessage = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Error desconocido';
+            alert(`Error al guardar el medicamento: ${errorMessage}`);
+        }
+    });
+
+    /**
+     * @brief Reinicia el formulario y el modo del modal al abrirlo en modo "crear".
+     */
+    document.getElementById('medicamentoModal').addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const mode = button.getAttribute('data-mode');
+
+        if (mode === 'create') {
+            currentMode = 'create';
+            currentMedicamentoId = null;
+            medicamentoModalLabel.textContent = 'Crear Nuevo Medicamento';
+            medicamentoForm.reset();
+            medicamentoIdInput.value = '';
+        }
+    });
+
+    // Manejar la búsqueda
+    searchButton.addEventListener('click', () => {
+        loadMedicamentos({ search: searchInput.value });
+    });
+
+    searchInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            loadMedicamentos({ search: searchInput.value });
+        }
+    });
+
+    // Cargar medicamentos al inicio
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMedicamentos();
+    });
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}

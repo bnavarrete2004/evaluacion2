@@ -1,0 +1,374 @@
+{% extends 'api_clinica/base.html' %}
+
+{% block title %}Pacientes - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Gestión de Pacientes</h5>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#pacienteModal" data-mode="create">
+                    <i class="fas fa-plus-circle me-2"></i>Nuevo Paciente
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <div class="d-flex">
+                        <label for="filterTipoSangre" class="form-label me-2 mb-0 align-self-center">Filtrar por Tipo de Sangre:</label>
+                        <select class="form-select me-2" id="filterTipoSangre" style="width: 150px;">
+                            <option value="">Todos</option>
+                            <option value="A+">A Positivo</option>
+                            <option value="A-">A Negativo</option>
+                            <option value="B+">B Positivo</option>
+                            <option value="B-">B Negativo</option>
+                            <option value="AB+">AB Positivo</option>
+                            <option value="AB-">AB Negativo</option>
+                            <option value="O+">O Positivo</option>
+                            <option value="O-">O Negativo</option>
+                        </select>
+                        <label for="filterActivo" class="form-label me-2 mb-0 align-self-center">Estado:</label>
+                        <select class="form-select me-2" id="filterActivo" style="width: 120px;">
+                            <option value="">Todos</option>
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                        </select>
+                        <button class="btn btn-primary" type="button" id="applyFiltersButton">Aplicar Filtros</button>
+                    </div>
+                    <div class="input-group w-25">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, RUT, correo...">
+                        <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre Completo</th>
+                                <th>RUT</th>
+                                <th>F. Nacimiento</th>
+                                <th>Tipo Sangre</th>
+                                <th>Correo</th>
+                                <th>Teléfono</th>
+                                <th>Activo</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pacientesTableBody">
+                            <!-- Los datos se cargarán aquí con JavaScript -->
+                            <tr>
+                                <td colspan="9" class="text-center">Cargando pacientes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Paciente -->
+<div class="modal fade" id="pacienteModal" tabindex="-1" aria-labelledby="pacienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pacienteModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="pacienteForm">
+                    <input type="hidden" id="pacienteId">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="apellido" class="form-label">Apellido</label>
+                        <input type="text" class="form-control" id="apellido" name="apellido" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rut" class="form-label">RUT</label>
+                        <input type="text" class="form-control" id="rut" name="rut" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento</label>
+                        <input type="date" class="form-control" id="fechaNacimiento" name="fecha_nacimiento" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipoSangre" class="form-label">Tipo de Sangre</label>
+                        <select class="form-select" id="tipoSangre" name="tipo_sangre" required>
+                            <option value="">Seleccione...</option>
+                            <option value="A+">A Positivo</option>
+                            <option value="A-">A Negativo</option>
+                            <option value="B+">B Positivo</option>
+                            <option value="B-">B Negativo</option>
+                            <option value="AB+">AB Positivo</option>
+                            <option value="AB-">AB Negativo</option>
+                            <option value="O+">O Positivo</option>
+                            <option value="O-">O Negativo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="correo" class="form-label">Correo</label>
+                        <input type="email" class="form-control" id="correo" name="correo">
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="telefono" name="telefono">
+                    </div>
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <textarea class="form-control" id="direccion" name="direccion" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="activo" name="activo">
+                        <label class="form-check-label" for="activo">Activo</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="pacienteForm" class="btn btn-primary" id="savePacienteBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const API_BASE_URL = '/api/pacientes/';
+    const pacientesTableBody = document.getElementById('pacientesTableBody');
+    const pacienteModal = new bootstrap.Modal(document.getElementById('pacienteModal'));
+    const pacienteModalLabel = document.getElementById('pacienteModalLabel');
+    const pacienteForm = document.getElementById('pacienteForm');
+    const pacienteIdInput = document.getElementById('pacienteId');
+    const nombreInput = document.getElementById('nombre');
+    const apellidoInput = document.getElementById('apellido');
+    const rutInput = document.getElementById('rut');
+    const fechaNacimientoInput = document.getElementById('fechaNacimiento');
+    const tipoSangreSelect = document.getElementById('tipoSangre');
+    const correoInput = document.getElementById('correo');
+    const telefonoInput = document.getElementById('telefono');
+    const direccionInput = document.getElementById('direccion');
+    const activoCheckbox = document.getElementById('activo');
+    const savePacienteBtn = document.getElementById('savePacienteBtn');
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const filterTipoSangreSelect = document.getElementById('filterTipoSangre');
+    const filterActivoSelect = document.getElementById('filterActivo');
+    const applyFiltersButton = document.getElementById('applyFiltersButton');
+
+    let currentMode = 'create';
+    let currentPacienteId = null;
+
+    /**
+     * @brief Carga los pacientes desde la API y los renderiza en la tabla.
+     * @param {object} filters - Objeto con filtros para la API.
+     */
+    async function loadPacientes(filters = {}) {
+        try {
+            let url = API_BASE_URL;
+            const params = new URLSearchParams();
+            if (filters.search) params.append('search', filters.search);
+            if (filters.tipo_sangre) params.append('tipo_sangre', filters.tipo_sangre);
+            if (filters.activo !== undefined && filters.activo !== null) params.append('activo', filters.activo);
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const response = await axios.get(url);
+            const pacientes = response.data;
+            renderPacientes(pacientes);
+        } catch (error) {
+            console.error('Error al cargar pacientes:', error);
+            pacientesTableBody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Error al cargar los pacientes.</td></tr>`;
+        }
+    }
+
+    /**
+     * @brief Renderiza la lista de pacientes en la tabla HTML.
+     * @param {Array} pacientes - Lista de objetos de paciente.
+     */
+    function renderPacientes(pacientes) {
+        pacientesTableBody.innerHTML = '';
+        if (pacientes.length === 0) {
+            pacientesTableBody.innerHTML = `<tr><td colspan="9" class="text-center">No hay pacientes registrados.</td></tr>`;
+            return;
+        }
+        pacientes.forEach(paciente => {
+            const row = pacientesTableBody.insertRow();
+            row.innerHTML = `
+                <td>${paciente.id}</td>
+                <td>${paciente.nombre} ${paciente.apellido}</td>
+                <td>${paciente.rut}</td>
+                <td>${paciente.fecha_nacimiento}</td>
+                <td>${paciente.tipo_sangre_display || 'N/A'}</td>
+                <td>${paciente.correo || 'N/A'}</td>
+                <td>${paciente.telefono || 'N/A'}</td>
+                <td>${paciente.activo ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-danger">No</span>'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${paciente.id}" data-bs-toggle="modal" data-bs-target="#pacienteModal" data-mode="edit">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-btn" data-id="${paciente.id}">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                </td>
+            `;
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', handleEditClick);
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Editar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleEditClick(event) {
+        currentMode = 'edit';
+        currentPacienteId = event.currentTarget.dataset.id;
+        pacienteModalLabel.textContent = 'Editar Paciente';
+
+        try {
+            const response = await axios.get(`${API_BASE_URL}${currentPacienteId}/`);
+            const paciente = response.data;
+            nombreInput.value = paciente.nombre;
+            apellidoInput.value = paciente.apellido;
+            rutInput.value = paciente.rut;
+            fechaNacimientoInput.value = paciente.fecha_nacimiento; // Formato 'YYYY-MM-DD'
+            tipoSangreSelect.value = paciente.tipo_sangre;
+            correoInput.value = paciente.correo;
+            telefonoInput.value = paciente.telefono;
+            direccionInput.value = paciente.direccion;
+            activoCheckbox.checked = paciente.activo;
+            pacienteIdInput.value = paciente.id;
+        } catch (error) {
+            console.error('Error al cargar datos de paciente para editar:', error);
+            alert('Error al cargar los datos del paciente.');
+        }
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Eliminar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleDeleteClick(event) {
+        const id = event.currentTarget.dataset.id;
+        if (confirm(`¿Estás seguro de que quieres eliminar al paciente con ID ${id}?`)) {
+            try {
+                await axios.delete(`${API_BASE_URL}${id}/`);
+                alert('Paciente eliminado correctamente.');
+                loadPacientes({
+                    search: searchInput.value,
+                    tipo_sangre: filterTipoSangreSelect.value,
+                    activo: filterActivoSelect.value !== '' ? filterActivoSelect.value : null
+                });
+            } catch (error) {
+                console.error('Error al eliminar paciente:', error);
+                alert('Error al eliminar el paciente. Podría tener consultas o registros asociados.');
+            }
+        }
+    }
+
+    /**
+     * @brief Maneja el envío del formulario para crear o actualizar un paciente.
+     * @param {Event} event - El evento de envío del formulario.
+     */
+    pacienteForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const data = {
+            nombre: nombreInput.value,
+            apellido: apellidoInput.value,
+            rut: rutInput.value,
+            fecha_nacimiento: fechaNacimientoInput.value,
+            tipo_sangre: tipoSangreSelect.value,
+            correo: correoInput.value,
+            telefono: telefonoInput.value,
+            direccion: direccionInput.value,
+            activo: activoCheckbox.checked,
+        };
+
+        try {
+            if (currentMode === 'create') {
+                await axios.post(API_BASE_URL, data);
+                alert('Paciente creado correctamente.');
+            } else { // currentMode === 'edit'
+                await axios.put(`${API_BASE_URL}${currentPacienteId}/`, data);
+                alert('Paciente actualizado correctamente.');
+            }
+            pacienteModal.hide();
+            pacienteForm.reset();
+            loadPacientes({
+                search: searchInput.value,
+                tipo_sangre: filterTipoSangreSelect.value,
+                activo: filterActivoSelect.value !== '' ? filterActivoSelect.value : null
+            });
+        } catch (error) {
+            console.error('Error al guardar paciente:', error.response ? error.response.data : error.message);
+            const errorMessage = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Error desconocido';
+            alert(`Error al guardar el paciente: ${errorMessage}`);
+        }
+    });
+
+    /**
+     * @brief Reinicia el formulario y el modo del modal al abrirlo en modo "crear".
+     */
+    document.getElementById('pacienteModal').addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const mode = button.getAttribute('data-mode');
+
+        if (mode === 'create') {
+            currentMode = 'create';
+            currentPacienteId = null;
+            pacienteModalLabel.textContent = 'Crear Nuevo Paciente';
+            pacienteForm.reset();
+            pacienteIdInput.value = '';
+            activoCheckbox.checked = true; // Por defecto activo
+            tipoSangreSelect.value = ''; // Asegurarse de que el select de tipo de sangre se reinicie
+        }
+    });
+
+    // Manejar la búsqueda
+    searchButton.addEventListener('click', () => {
+        loadPacientes({
+            search: searchInput.value,
+            tipo_sangre: filterTipoSangreSelect.value,
+            activo: filterActivoSelect.value !== '' ? filterActivoSelect.value : null
+        });
+    });
+
+    searchInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            loadPacientes({
+                search: searchInput.value,
+                tipo_sangre: filterTipoSangreSelect.value,
+                activo: filterActivoSelect.value !== '' ? filterActivoSelect.value : null
+            });
+        }
+    });
+
+    // Manejar la aplicación de filtros
+    applyFiltersButton.addEventListener('click', () => {
+        loadPacientes({
+            search: searchInput.value,
+            tipo_sangre: filterTipoSangreSelect.value,
+            activo: filterActivoSelect.value !== '' ? filterActivoSelect.value : null
+        });
+    });
+
+    // Cargar pacientes al inicio
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPacientes();
+    });
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}

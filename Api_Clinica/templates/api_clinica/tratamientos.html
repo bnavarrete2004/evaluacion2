@@ -1,0 +1,360 @@
+{% extends 'api_clinica/base.html' %}
+
+{% block title %}Tratamientos - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Gestión de Tratamientos</h5>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#tratamientoModal" data-mode="create">
+                    <i class="fas fa-plus-circle me-2"></i>Nuevo Tratamiento
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <div class="d-flex">
+                        <label for="filterConsulta" class="form-label me-2 mb-0 align-self-center">Filtrar por Consulta:</label>
+                        <select class="form-select me-2" id="filterConsulta" style="width: 250px;">
+                            <option value="">Todas</option>
+                            <!-- Opciones de consultas se cargarán aquí -->
+                        </select>
+                        <button class="btn btn-primary" type="button" id="applyFiltersButton">Aplicar Filtros</button>
+                    </div>
+                    <div class="input-group w-25">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, descripción...">
+                        <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Consulta ID</th>
+                                <th>Paciente</th>
+                                <th>Médico</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Fin</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tratamientosTableBody">
+                            <!-- Los datos se cargarán aquí con JavaScript -->
+                            <tr>
+                                <td colspan="9" class="text-center">Cargando tratamientos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Tratamiento -->
+<div class="modal fade" id="tratamientoModal" tabindex="-1" aria-labelledby="tratamientoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tratamientoModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="tratamientoForm">
+                    <input type="hidden" id="tratamientoId">
+                    <div class="mb-3">
+                        <label for="consulta" class="form-label">Consulta Médica</label>
+                        <select class="form-select" id="consulta" name="consulta" required>
+                            <!-- Opciones de consultas se cargarán aquí -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Tratamiento</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaInicio" class="form-label">Fecha de Inicio</label>
+                            <input type="date" class="form-control" id="fechaInicio" name="fecha_inicio" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaFin" class="form-label">Fecha de Fin (opcional)</label>
+                            <input type="date" class="form-control" id="fechaFin" name="fecha_fin">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="tratamientoForm" class="btn btn-primary" id="saveTratamientoBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const API_BASE_URL = '/api/tratamientos/';
+    const CONSULTAS_API_URL = '/api/consultas/';
+
+    const tratamientosTableBody = document.getElementById('tratamientosTableBody');
+    const tratamientoModal = new bootstrap.Modal(document.getElementById('tratamientoModal'));
+    const tratamientoModalLabel = document.getElementById('tratamientoModalLabel');
+    const tratamientoForm = document.getElementById('tratamientoForm');
+    const tratamientoIdInput = document.getElementById('tratamientoId');
+    const consultaSelect = document.getElementById('consulta');
+    const nombreInput = document.getElementById('nombre');
+    const descripcionInput = document.getElementById('descripcion');
+    const fechaInicioInput = document.getElementById('fechaInicio');
+    const fechaFinInput = document.getElementById('fechaFin');
+    const saveTratamientoBtn = document.getElementById('saveTratamientoBtn');
+
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const filterConsultaSelect = document.getElementById('filterConsulta');
+    const applyFiltersButton = document.getElementById('applyFiltersButton');
+
+    let currentMode = 'create';
+    let currentTratamientoId = null;
+
+    /**
+     * @brief Carga las consultas médicas para el select del formulario y el filtro.
+     */
+    async function loadConsultasForSelects() {
+        try {
+            const response = await axios.get(CONSULTAS_API_URL);
+            const consultas = response.data;
+
+            // Limpiar y poblar select del formulario
+            consultaSelect.innerHTML = '<option value="">Seleccione una consulta</option>';
+            // Limpiar y poblar select del filtro
+            filterConsultaSelect.innerHTML = '<option value="">Todas</option>';
+
+            consultas.forEach(c => {
+                const optionText = `ID: ${c.id} | P: ${c.paciente_nombre_completo} | M: ${c.medico_nombre_completo} | F: ${new Date(c.fecha_consulta).toLocaleDateString()}`;
+                
+                const optionForm = document.createElement('option');
+                optionForm.value = c.id;
+                optionForm.textContent = optionText;
+                consultaSelect.appendChild(optionForm);
+
+                const optionFilter = document.createElement('option');
+                optionFilter.value = c.id;
+                optionFilter.textContent = optionText;
+                filterConsultaSelect.appendChild(optionFilter);
+            });
+        } catch (error) {
+            console.error('Error al cargar consultas para selectores:', error);
+            alert('Error al cargar la lista de consultas médicas.');
+        }
+    }
+
+    /**
+     * @brief Carga los tratamientos desde la API y los renderiza en la tabla.
+     * @param {object} filters - Objeto con filtros para la API.
+     */
+    async function loadTratamientos(filters = {}) {
+        try {
+            let url = API_BASE_URL;
+            const params = new URLSearchParams();
+            if (filters.search) params.append('search', filters.search);
+            if (filters.consulta) params.append('consulta', filters.consulta);
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const response = await axios.get(url);
+            const tratamientos = response.data;
+            renderTratamientos(tratamientos);
+        } catch (error) {
+            console.error('Error al cargar tratamientos:', error);
+            tratamientosTableBody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Error al cargar los tratamientos.</td></tr>`;
+        }
+    }
+
+    /**
+     * @brief Renderiza la lista de tratamientos en la tabla HTML.
+     * @param {Array} tratamientos - Lista de objetos de tratamiento.
+     */
+    function renderTratamientos(tratamientos) {
+        tratamientosTableBody.innerHTML = '';
+        if (tratamientos.length === 0) {
+            tratamientosTableBody.innerHTML = `<tr><td colspan="9" class="text-center">No hay tratamientos registrados.</td></tr>`;
+            return;
+        }
+        tratamientos.forEach(tratamiento => {
+            const row = tratamientosTableBody.insertRow();
+            row.innerHTML = `
+                <td>${tratamiento.id}</td>
+                <td>${tratamiento.nombre}</td>
+                <td>${tratamiento.descripcion.substring(0, 70)}...</td>
+                <td>${tratamiento.consulta || 'N/A'}</td>
+                <td>${tratamiento.consulta_paciente_nombre_completo || 'N/A'}</td>
+                <td>${tratamiento.consulta_medico_nombre_completo || 'N/A'}</td>
+                <td>${tratamiento.fecha_inicio || 'N/A'}</td>
+                <td>${tratamiento.fecha_fin || 'N/A'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${tratamiento.id}" data-bs-toggle="modal" data-bs-target="#tratamientoModal" data-mode="edit">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-btn" data-id="${tratamiento.id}">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                </td>
+            `;
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', handleEditClick);
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Editar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleEditClick(event) {
+        currentMode = 'edit';
+        currentTratamientoId = event.currentTarget.dataset.id;
+        tratamientoModalLabel.textContent = 'Editar Tratamiento';
+
+        try {
+            const response = await axios.get(`${API_BASE_URL}${currentTratamientoId}/`);
+            const tratamiento = response.data;
+            
+            consultaSelect.value = tratamiento.consulta;
+            nombreInput.value = tratamiento.nombre;
+            descripcionInput.value = tratamiento.descripcion;
+            fechaInicioInput.value = tratamiento.fecha_inicio;
+            fechaFinInput.value = tratamiento.fecha_fin; // Puede ser null
+
+            tratamientoIdInput.value = tratamiento.id;
+        } catch (error) {
+            console.error('Error al cargar datos de tratamiento para editar:', error);
+            alert('Error al cargar los datos del tratamiento.');
+        }
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Eliminar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleDeleteClick(event) {
+        const id = event.currentTarget.dataset.id;
+        if (confirm(`¿Estás seguro de que quieres eliminar el tratamiento con ID ${id}?`)) {
+            try {
+                await axios.delete(`${API_BASE_URL}${id}/`);
+                alert('Tratamiento eliminado correctamente.');
+                loadTratamientos({
+                    search: searchInput.value,
+                    consulta: filterConsultaSelect.value
+                });
+            } catch (error) {
+                console.error('Error al eliminar tratamiento:', error);
+                alert('Error al eliminar el tratamiento.');
+            }
+        }
+    }
+
+    /**
+     * @brief Maneja el envío del formulario para crear o actualizar un tratamiento.
+     * @param {Event} event - El evento de envío del formulario.
+     */
+    tratamientoForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const data = {
+            consulta: consultaSelect.value,
+            nombre: nombreInput.value,
+            descripcion: descripcionInput.value,
+            fecha_inicio: fechaInicioInput.value,
+            fecha_fin: fechaFinInput.value || null, // Enviar null si está vacío
+        };
+
+        try {
+            if (currentMode === 'create') {
+                await axios.post(API_BASE_URL, data);
+                alert('Tratamiento creado correctamente.');
+            } else { // currentMode === 'edit'
+                await axios.put(`${API_BASE_URL}${currentTratamientoId}/`, data);
+                alert('Tratamiento actualizado correctamente.');
+            }
+            tratamientoModal.hide();
+            tratamientoForm.reset();
+            loadTratamientos({
+                search: searchInput.value,
+                consulta: filterConsultaSelect.value
+            });
+        } catch (error) {
+            console.error('Error al guardar tratamiento:', error.response ? error.response.data : error.message);
+            const errorMessage = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Error desconocido';
+            alert(`Error al guardar el tratamiento: ${errorMessage}`);
+        }
+    });
+
+    /**
+     * @brief Reinicia el formulario y el modo del modal al abrirlo en modo "crear".
+     */
+    document.getElementById('tratamientoModal').addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const mode = button.getAttribute('data-mode');
+
+        if (mode === 'create') {
+            currentMode = 'create';
+            currentTratamientoId = null;
+            tratamientoModalLabel.textContent = 'Crear Nuevo Tratamiento';
+            tratamientoForm.reset();
+            tratamientoIdInput.value = '';
+            consultaSelect.value = '';
+            fechaInicioInput.value = new Date().toISOString().slice(0, 10); // Fecha actual por defecto
+            fechaFinInput.value = '';
+        }
+    });
+
+    // Manejar la búsqueda
+    searchButton.addEventListener('click', () => {
+        loadTratamientos({
+            search: searchInput.value,
+            consulta: filterConsultaSelect.value
+        });
+    });
+
+    searchInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            loadTratamientos({
+                search: searchInput.value,
+                consulta: filterConsultaSelect.value
+            });
+        }
+    });
+
+    // Manejar la aplicación de filtros
+    applyFiltersButton.addEventListener('click', () => {
+        loadTratamientos({
+            search: searchInput.value,
+            consulta: filterConsultaSelect.value
+        });
+    });
+
+
+    // Cargar consultas y tratamientos al inicio
+    document.addEventListener('DOMContentLoaded', () => {
+        loadConsultasForSelects();
+        loadTratamientos();
+    });
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}

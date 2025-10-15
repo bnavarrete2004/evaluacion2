@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Salud Vital Ltda.{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <!-- El hash integrity de Bootstrap CSS ya era correcto, pero lo mantengo aquí por coherencia -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa; /* Blanco muy claro */
+            color: #343a40; /* Negro para textos */
+        }
+        .navbar {
+            background-color: #5B618A; /* Azul marino */
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .navbar-brand, .nav-link {
+            color: white !important;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: #9EADC8 !important; /* Azul más claro al pasar el mouse */
+        }
+        .container-fluid.main-content {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .card {
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,.05);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #5B507A; /* Azul más oscuro para encabezados de tarjeta */
+            color: white;
+            font-weight: 600;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        .btn-primary {
+            background-color: #5B618A;
+            border-color: #5B618A;
+        }
+        .btn-primary:hover {
+            background-color: #4A4F73;
+            border-color: #4A4F73;
+        }
+        .btn-secondary {
+            background-color: #9EADC8;
+            border-color: #9EADC8;
+            color: #343a40;
+        }
+        .btn-secondary:hover {
+            background-color: #8C99B9;
+            border-color: #8C99B9;
+            color: #343a40;
+        }
+        .table thead {
+            background-color: #9EADC8; /* Azul claro para encabezados de tabla */
+            color: #343a40;
+        }
+        .table tbody tr:hover {
+            background-color: #e9ecef;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .modal-header {
+            background-color: #5B507A;
+            color: white;
+            border-bottom: none;
+        }
+        .modal-footer .btn-primary {
+            background-color: #5B618A;
+            border-color: #5B618A;
+        }
+        .modal-footer .btn-secondary {
+            background-color: #B9E28C; /* Verde claro */
+            border-color: #B9E28C;
+            color: #343a40;
+        }
+    </style>
+
+    <!-- METATAG PARA EL TOKEN CSRF (¡IMPORTANTE PARA AXIOS!) -->
+    <meta name="csrf-token" content="{{ csrf_token }}"> 
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Salud Vital Ltda.</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'especialidades_html' %}">Especialidades</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'medicos_html' %}">Médicos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'pacientes_html' %}">Pacientes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'consultas_html' %}">Consultas Médicas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'tratamientos_html' %}">Tratamientos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'medicamentos_html' %}">Medicamentos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'recetas_html' %}">Recetas Médicas</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/swagger/" target="_blank">Docs API</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-content">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <!-- Bootstrap JS y dependencias (Popper.js) -->
+    <!-- ¡HASH INTEGRITY ACTUALIZADO PARA POPPER.JS! -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    
+    <!-- ¡HASH INTEGRITY ACTUALIZADO PARA BOOTSTRAP.JS! -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
+    
+    <!-- Incluir Axios para peticiones HTTP (más fácil que Fetch API puro para POST/PUT/DELETE) -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- Bloque para JS adicional de las páginas hijas, con la configuración de Axios CSRF incluida -->
+    <script>
+        // Configuración global de Axios para CSRF token
+        // Esto DEBE ejecutarse después de que Axios y el meta tag 'csrf-token' estén cargados.
+        axios.defaults.xsrfCookieName = 'csrftoken';
+        axios.defaults.xsrfHeaderName = 'X-CSRFToken';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        axios.defaults.headers.common['X-CSRFToken'] = csrfToken;
+
+        // Si tienes algún JS global que necesite 'bootstrap' aquí, lo pondrías después de esta línea.
+        // Pero idealmente, el JS específico de cada página va en el bloque extra_js.
+    </script>
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,252 @@
+{% extends 'api_clinica/base.html' %}
+
+{% block title %}Especialidades - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Gestión de Especialidades</h5>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#especialidadModal" data-mode="create">
+                    <i class="fas fa-plus-circle me-2"></i>Nueva Especialidad
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 d-flex justify-content-end">
+                    <div class="input-group w-25">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre o descripción">
+                        <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="especialidadesTableBody">
+                            <!-- Los datos se cargarán aquí con JavaScript -->
+                            <tr>
+                                <td colspan="4" class="text-center">Cargando especialidades...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Especialidad -->
+<div class="modal fade" id="especialidadModal" tabindex="-1" aria-labelledby="especialidadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="especialidadModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="especialidadForm">
+                    <input type="hidden" id="especialidadId">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="especialidadForm" class="btn btn-primary" id="saveEspecialidadBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // URL base de la API
+    const API_BASE_URL = '/api/especialidades/';
+    const especialidadesTableBody = document.getElementById('especialidadesTableBody');
+    const especialidadModal = new bootstrap.Modal(document.getElementById('especialidadModal'));
+    const especialidadModalLabel = document.getElementById('especialidadModalLabel');
+    const especialidadForm = document.getElementById('especialidadForm');
+    const especialidadIdInput = document.getElementById('especialidadId');
+    const nombreInput = document.getElementById('nombre');
+    const descripcionInput = document.getElementById('descripcion');
+    const saveEspecialidadBtn = document.getElementById('saveEspecialidadBtn');
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+
+    let currentMode = 'create'; // 'create' o 'edit'
+    let currentEspecialidadId = null;
+
+    /**
+     * @brief Carga las especialidades desde la API y las renderiza en la tabla.
+     * @param {string} searchTerm - Término de búsqueda opcional.
+     */
+    async function loadEspecialidades(searchTerm = '') {
+        try {
+            let url = API_BASE_URL;
+            if (searchTerm) {
+                url += `?search=${encodeURIComponent(searchTerm)}`;
+            }
+            const response = await axios.get(url);
+            const especialidades = response.data;
+            renderEspecialidades(especialidades);
+        } catch (error) {
+            console.error('Error al cargar especialidades:', error);
+            especialidadesTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error al cargar las especialidades.</td></tr>`;
+        }
+    }
+
+    /**
+     * @brief Renderiza la lista de especialidades en la tabla HTML.
+     * @param {Array} especialidades - Lista de objetos de especialidad.
+     */
+    function renderEspecialidades(especialidades) {
+        especialidadesTableBody.innerHTML = '';
+        if (especialidades.length === 0) {
+            especialidadesTableBody.innerHTML = `<tr><td colspan="4" class="text-center">No hay especialidades registradas.</td></tr>`;
+            return;
+        }
+        especialidades.forEach(especialidad => {
+            const row = especialidadesTableBody.insertRow();
+            row.innerHTML = `
+                <td>${especialidad.id}</td>
+                <td>${especialidad.nombre}</td>
+                <td>${especialidad.descripcion || 'N/A'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${especialidad.id}" data-bs-toggle="modal" data-bs-target="#especialidadModal" data-mode="edit">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-btn" data-id="${especialidad.id}">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                </td>
+            `;
+        });
+
+        // Añadir event listeners a los botones de editar y eliminar
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', handleEditClick);
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Editar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleEditClick(event) {
+        currentMode = 'edit';
+        currentEspecialidadId = event.currentTarget.dataset.id;
+        especialidadModalLabel.textContent = 'Editar Especialidad';
+
+        try {
+            const response = await axios.get(`${API_BASE_URL}${currentEspecialidadId}/`);
+            const especialidad = response.data;
+            nombreInput.value = especialidad.nombre;
+            descripcionInput.value = especialidad.descripcion;
+            especialidadIdInput.value = especialidad.id;
+        } catch (error) {
+            console.error('Error al cargar datos de especialidad para editar:', error);
+            alert('Error al cargar los datos de la especialidad.');
+        }
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Eliminar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleDeleteClick(event) {
+        const id = event.currentTarget.dataset.id;
+        if (confirm(`¿Estás seguro de que quieres eliminar la especialidad con ID ${id}?`)) {
+            try {
+                await axios.delete(`${API_BASE_URL}${id}/`);
+                alert('Especialidad eliminada correctamente.');
+                loadEspecialidades(); // Recargar la tabla
+            } catch (error) {
+                console.error('Error al eliminar especialidad:', error);
+                alert('Error al eliminar la especialidad. Podría estar en uso por un médico.');
+            }
+        }
+    }
+
+    /**
+     * @brief Maneja el envío del formulario para crear o actualizar una especialidad.
+     * @param {Event} event - El evento de envío del formulario.
+     */
+    especialidadForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // Evitar el envío por defecto del formulario
+
+        const data = {
+            nombre: nombreInput.value,
+            descripcion: descripcionInput.value,
+        };
+
+        try {
+            if (currentMode === 'create') {
+                await axios.post(API_BASE_URL, data);
+                alert('Especialidad creada correctamente.');
+            } else { // currentMode === 'edit'
+                await axios.put(`${API_BASE_URL}${currentEspecialidadId}/`, data);
+                alert('Especialidad actualizada correctamente.');
+            }
+            especialidadModal.hide(); // Cerrar el modal
+            especialidadForm.reset(); // Limpiar el formulario
+            loadEspecialidades(); // Recargar la tabla
+        } catch (error) {
+            console.error('Error al guardar especialidad:', error.response ? error.response.data : error.message);
+            const errorMessage = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Error desconocido';
+            alert(`Error al guardar la especialidad: ${errorMessage}`);
+        }
+    });
+
+    /**
+     * @brief Reinicia el formulario y el modo del modal al abrirlo en modo "crear".
+     */
+    document.getElementById('especialidadModal').addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget; // Botón que activó el modal
+        const mode = button.getAttribute('data-mode');
+
+        if (mode === 'create') {
+            currentMode = 'create';
+            currentEspecialidadId = null;
+            especialidadModalLabel.textContent = 'Crear Nueva Especialidad';
+            especialidadForm.reset(); // Limpiar formulario
+            especialidadIdInput.value = ''; // Asegurarse de que el ID oculto esté vacío
+        }
+        // Si es modo 'edit', los datos ya se cargaron en handleEditClick
+    });
+
+    // Manejar la búsqueda
+    searchButton.addEventListener('click', () => {
+        loadEspecialidades(searchInput.value);
+    });
+
+    searchInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            loadEspecialidades(searchInput.value);
+        }
+    });
+
+    // Cargar especialidades al inicio
+    document.addEventListener('DOMContentLoaded', () => {
+        loadEspecialidades();
+    });
+</script>
+<!-- Font Awesome para íconos (opcional pero mejora la estética) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
