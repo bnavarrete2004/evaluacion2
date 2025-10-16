@@ -23,7 +23,7 @@
                         <button class="btn btn-primary" type="button" id="applyFiltersButton">Aplicar Filtros</button>
                     </div>
                     <div class="input-group w-25">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, descripción...">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por descripción, observaciones...">
                         <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
                     </div>
                 </div>
@@ -32,20 +32,17 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Descripción</th>
                                 <th>Consulta ID</th>
-                                <th>Paciente</th>
-                                <th>Médico</th>
-                                <th>Fecha Inicio</th>
-                                <th>Fecha Fin</th>
+                                <th>Descripción</th>
+                                <th>Duración (días)</th>
+                                <th>Observaciones</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tratamientosTableBody">
                             <!-- Los datos se cargarán aquí con JavaScript -->
                             <tr>
-                                <td colspan="9" class="text-center">Cargando tratamientos...</td>
+                                <td colspan="6" class="text-center">Cargando tratamientos...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -73,22 +70,16 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="nombre" class="form-label">Nombre del Tratamiento</label>
-                        <input type="text" class="form-control" id="nombre" name="nombre" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
+                        <label for="descripcion" class="form-label">Descripción del Tratamiento</label>
                         <textarea class="form-control" id="descripcion" name="descripcion" rows="3" required></textarea>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="fechaInicio" class="form-label">Fecha de Inicio</label>
-                            <input type="date" class="form-control" id="fechaInicio" name="fecha_inicio" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="fechaFin" class="form-label">Fecha de Fin (opcional)</label>
-                            <input type="date" class="form-control" id="fechaFin" name="fecha_fin">
-                        </div>
+                    <div class="mb-3">
+                        <label for="duracionDias" class="form-label">Duración (en días)</label>
+                        <input type="number" class="form-control" id="duracionDias" name="duracion_dias" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="observaciones" class="form-label">Observaciones (opcional)</label>
+                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
                     </div>
                 </form>
             </div>
@@ -112,10 +103,9 @@
     const tratamientoForm = document.getElementById('tratamientoForm');
     const tratamientoIdInput = document.getElementById('tratamientoId');
     const consultaSelect = document.getElementById('consulta');
-    const nombreInput = document.getElementById('nombre');
     const descripcionInput = document.getElementById('descripcion');
-    const fechaInicioInput = document.getElementById('fechaInicio');
-    const fechaFinInput = document.getElementById('fechaFin');
+    const duracionDiasInput = document.getElementById('duracionDias'); // Nuevo
+    const observacionesInput = document.getElementById('observaciones'); // Nuevo
     const saveTratamientoBtn = document.getElementById('saveTratamientoBtn');
 
     const searchInput = document.getElementById('searchInput');
@@ -140,7 +130,7 @@
             filterConsultaSelect.innerHTML = '<option value="">Todas</option>';
 
             consultas.forEach(c => {
-                const optionText = `ID: ${c.id} | P: ${c.paciente_nombre_completo} | M: ${c.medico_nombre_completo} | F: ${new Date(c.fecha_consulta).toLocaleDateString()}`;
+                const optionText = `ID: ${c.id} | P: ${c.paciente_nombre_completo || 'N/A'} | M: ${c.medico_nombre_completo || 'N/A'} | F: ${new Date(c.fecha_consulta).toLocaleDateString()}`;
                 
                 const optionForm = document.createElement('option');
                 optionForm.value = c.id;
@@ -166,7 +156,7 @@
         try {
             let url = API_BASE_URL;
             const params = new URLSearchParams();
-            if (filters.search) params.append('search', filters.search);
+            if (filters.search) params.append('search', filters.search); // Search en descripción, observaciones
             if (filters.consulta) params.append('consulta', filters.consulta);
 
             if (params.toString()) {
@@ -178,7 +168,7 @@
             renderTratamientos(tratamientos);
         } catch (error) {
             console.error('Error al cargar tratamientos:', error);
-            tratamientosTableBody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Error al cargar los tratamientos.</td></tr>`;
+            tratamientosTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar los tratamientos.</td></tr>`;
         }
     }
 
@@ -189,20 +179,17 @@
     function renderTratamientos(tratamientos) {
         tratamientosTableBody.innerHTML = '';
         if (tratamientos.length === 0) {
-            tratamientosTableBody.innerHTML = `<tr><td colspan="9" class="text-center">No hay tratamientos registrados.</td></tr>`;
+            tratamientosTableBody.innerHTML = `<tr><td colspan="6" class="text-center">No hay tratamientos registrados.</td></tr>`;
             return;
         }
         tratamientos.forEach(tratamiento => {
             const row = tratamientosTableBody.insertRow();
             row.innerHTML = `
                 <td>${tratamiento.id}</td>
-                <td>${tratamiento.nombre}</td>
-                <td>${tratamiento.descripcion.substring(0, 70)}...</td>
-                <td>${tratamiento.consulta || 'N/A'}</td>
-                <td>${tratamiento.consulta_paciente_nombre_completo || 'N/A'}</td>
-                <td>${tratamiento.consulta_medico_nombre_completo || 'N/A'}</td>
-                <td>${tratamiento.fecha_inicio || 'N/A'}</td>
-                <td>${tratamiento.fecha_fin || 'N/A'}</td>
+                <td>${tratamiento.consulta || 'N/A'}</td> {# ID de la consulta #}
+                <td>${tratamiento.descripcion.substring(0, 70)}...</td> {# Recortar descripción #}
+                <td>${tratamiento.duracion_dias || 'N/A'}</td>
+                <td>${tratamiento.observaciones || 'N/A'}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${tratamiento.id}" data-bs-toggle="modal" data-bs-target="#tratamientoModal" data-mode="edit">
                         <i class="fas fa-edit"></i> Editar
@@ -236,10 +223,9 @@
             const tratamiento = response.data;
             
             consultaSelect.value = tratamiento.consulta;
-            nombreInput.value = tratamiento.nombre;
             descripcionInput.value = tratamiento.descripcion;
-            fechaInicioInput.value = tratamiento.fecha_inicio;
-            fechaFinInput.value = tratamiento.fecha_fin; // Puede ser null
+            duracionDiasInput.value = tratamiento.duracion_dias;
+            observacionesInput.value = tratamiento.observaciones || ''; // Asegurar que sea string vacío si es null
 
             tratamientoIdInput.value = tratamiento.id;
         } catch (error) {
@@ -278,10 +264,9 @@
 
         const data = {
             consulta: consultaSelect.value,
-            nombre: nombreInput.value,
             descripcion: descripcionInput.value,
-            fecha_inicio: fechaInicioInput.value,
-            fecha_fin: fechaFinInput.value || null, // Enviar null si está vacío
+            duracion_dias: duracionDiasInput.value,
+            observaciones: observacionesInput.value || null, // Enviar null si está vacío
         };
 
         try {
@@ -319,8 +304,7 @@
             tratamientoForm.reset();
             tratamientoIdInput.value = '';
             consultaSelect.value = '';
-            fechaInicioInput.value = new Date().toISOString().slice(0, 10); // Fecha actual por defecto
-            fechaFinInput.value = '';
+            // No hay campos de fecha de inicio/fin ni nombre para resetear en el modelo actual
         }
     });
 

@@ -15,10 +15,10 @@
             <div class="card-body">
                 <div class="mb-3 d-flex justify-content-between align-items-center">
                     <div class="d-flex">
-                        <label for="filterConsulta" class="form-label me-2 mb-0 align-self-center">Filtrar por Consulta:</label>
-                        <select class="form-select me-2" id="filterConsulta" style="width: 250px;">
-                            <option value="">Todas</option>
-                            <!-- Opciones de consultas se cargarán aquí -->
+                        <label for="filterTratamiento" class="form-label me-2 mb-0 align-self-center">Filtrar por Tratamiento:</label>
+                        <select class="form-select me-2" id="filterTratamiento" style="width: 250px;">
+                            <option value="">Todos</option>
+                            <!-- Opciones de tratamientos se cargarán aquí -->
                         </select>
                         <label for="filterMedicamento" class="form-label me-2 mb-0 align-self-center">Filtrar por Medicamento:</label>
                         <select class="form-select me-2" id="filterMedicamento" style="width: 200px;">
@@ -28,7 +28,7 @@
                         <button class="btn btn-primary" type="button" id="applyFiltersButton">Aplicar Filtros</button>
                     </div>
                     <div class="input-group w-25">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por instrucciones, diagnóstico...">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por dosis, frecuencia, duración...">
                         <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
                     </div>
                 </div>
@@ -37,19 +37,18 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Consulta ID</th>
-                                <th>Paciente</th>
-                                <th>Médico</th>
+                                <th>Tratamiento ID</th>
                                 <th>Medicamento</th>
-                                <th>Cantidad</th>
-                                <th>Fecha Receta</th>
+                                <th>Dosis</th>
+                                <th>Frecuencia</th>
+                                <th>Duración</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="recetasTableBody">
                             <!-- Los datos se cargarán aquí con JavaScript -->
                             <tr>
-                                <td colspan="8" class="text-center">Cargando recetas...</td>
+                                <td colspan="7" class="text-center">Cargando recetas...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -72,9 +71,9 @@
                     <input type="hidden" id="recetaId">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="consulta" class="form-label">Consulta Médica</label>
-                            <select class="form-select" id="consulta" name="consulta" required>
-                                <!-- Opciones de consultas se cargarán aquí -->
+                            <label for="tratamiento" class="form-label">Tratamiento</label>
+                            <select class="form-select" id="tratamiento" name="tratamiento" required>
+                                <!-- Opciones de tratamientos se cargarán aquí -->
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -85,16 +84,16 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="cantidad" class="form-label">Cantidad</label>
-                        <input type="text" class="form-control" id="cantidad" name="cantidad" placeholder="Ej: '10 tabletas', '1 frasco'" required>
+                        <label for="dosis" class="form-label">Dosis (Ej: "500 mg", "1 tableta")</label>
+                        <input type="text" class="form-control" id="dosis" name="dosis" required>
                     </div>
                     <div class="mb-3">
-                        <label for="instrucciones" class="form-label">Instrucciones</label>
-                        <textarea class="form-control" id="instrucciones" name="instrucciones" rows="3" required></textarea>
+                        <label for="frecuencia" class="form-label">Frecuencia (Ej: "Cada 8 horas", "Dos veces al día")</label>
+                        <input type="text" class="form-control" id="frecuencia" name="frecuencia" required>
                     </div>
                     <div class="mb-3">
-                        <label for="fechaReceta" class="form-label">Fecha de Receta</label>
-                        <input type="date" class="form-control" id="fechaReceta" name="fecha_receta" required>
+                        <label for="duracion" class="form-label">Duración (Ej: "7 días", "hasta terminar el frasco")</label>
+                        <input type="text" class="form-control" id="duracion" name="duracion" required>
                     </div>
                 </form>
             </div>
@@ -110,7 +109,7 @@
 {% block extra_js %}
 <script>
     const API_BASE_URL = '/api/recetas/';
-    const CONSULTAS_API_URL = '/api/consultas/';
+    const TRATAMIENTOS_API_URL = '/api/tratamientos/'; // Nueva URL para tratamientos
     const MEDICAMENTOS_API_URL = '/api/medicamentos/';
 
     const recetasTableBody = document.getElementById('recetasTableBody');
@@ -118,16 +117,17 @@
     const recetaModalLabel = document.getElementById('recetaModalLabel');
     const recetaForm = document.getElementById('recetaForm');
     const recetaIdInput = document.getElementById('recetaId');
-    const consultaSelect = document.getElementById('consulta');
+    const tratamientoSelect = document.getElementById('tratamiento'); // Cambiado de consulta a tratamiento
     const medicamentoSelect = document.getElementById('medicamento');
-    const cantidadInput = document.getElementById('cantidad');
-    const instruccionesInput = document.getElementById('instrucciones');
-    const fechaRecetaInput = document.getElementById('fechaReceta');
+    const dosisInput = document.getElementById('dosis'); // Nuevo
+    const frecuenciaInput = document.getElementById('frecuencia'); // Nuevo
+    const duracionInput = document.getElementById('duracion'); // Nuevo
+
     const saveRecetaBtn = document.getElementById('saveRecetaBtn');
 
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
-    const filterConsultaSelect = document.getElementById('filterConsulta');
+    const filterTratamientoSelect = document.getElementById('filterTratamiento'); // Cambiado de filterConsulta a filterTratamiento
     const filterMedicamentoSelect = document.getElementById('filterMedicamento');
     const applyFiltersButton = document.getElementById('applyFiltersButton');
 
@@ -135,33 +135,35 @@
     let currentRecetaId = null;
 
     /**
-     * @brief Carga las consultas y medicamentos para los selectores del formulario y filtro.
+     * @brief Carga los tratamientos y medicamentos para los selectores del formulario y filtro.
      */
     async function loadForeignKeysForSelects() {
         try {
-            const [consultasResponse, medicamentosResponse] = await Promise.all([
-                axios.get(CONSULTAS_API_URL),
+            const [tratamientosResponse, medicamentosResponse] = await Promise.all([
+                axios.get(TRATAMIENTOS_API_URL), // Usar la nueva URL
                 axios.get(MEDICAMENTOS_API_URL)
             ]);
 
-            const consultas = consultasResponse.data;
+            const tratamientos = tratamientosResponse.data;
             const medicamentos = medicamentosResponse.data;
 
-            // Limpiar y poblar select de consultas (formulario y filtro)
-            consultaSelect.innerHTML = '<option value="">Seleccione una consulta</option>';
-            filterConsultaSelect.innerHTML = '<option value="">Todas</option>';
-            consultas.forEach(c => {
-                const optionText = `ID: ${c.id} | P: ${c.paciente_nombre_completo} | F: ${new Date(c.fecha_consulta).toLocaleDateString()}`;
+            // Limpiar y poblar select de tratamientos (formulario y filtro)
+            tratamientoSelect.innerHTML = '<option value="">Seleccione un tratamiento</option>';
+            filterTratamientoSelect.innerHTML = '<option value="">Todos</option>';
+            tratamientos.forEach(t => {
+                // Asumiendo que Tratamiento tiene un id y quizás una descripción, paciente, o fecha relevante
+                // Ajusta el texto de la opción según la información que tenga tu modelo Tratamiento
+                const optionText = `ID: ${t.id} - Paciente: ${t.paciente_nombre_completo || 'N/A'}`; // Ajusta esto
                 
                 const optionForm = document.createElement('option');
-                optionForm.value = c.id;
+                optionForm.value = t.id;
                 optionForm.textContent = optionText;
-                consultaSelect.appendChild(optionForm);
+                tratamientoSelect.appendChild(optionForm);
 
                 const optionFilter = document.createElement('option');
-                optionFilter.value = c.id;
+                optionFilter.value = t.id;
                 optionFilter.textContent = optionText;
-                filterConsultaSelect.appendChild(optionFilter);
+                filterTratamientoSelect.appendChild(optionFilter);
             });
 
             // Limpiar y poblar select de medicamentos (formulario y filtro)
@@ -170,18 +172,18 @@
             medicamentos.forEach(m => {
                 const optionForm = document.createElement('option');
                 optionForm.value = m.id;
-                optionForm.textContent = `${m.nombre_comercial} (${m.presentacion})`;
+                optionForm.textContent = `${m.nombre} (${m.laboratorio})`; // Usamos 'nombre' y 'laboratorio' de tu modelo Medicamento
                 medicamentoSelect.appendChild(optionForm);
 
                 const optionFilter = document.createElement('option');
                 optionFilter.value = m.id;
-                optionFilter.textContent = `${m.nombre_comercial} (${m.presentacion})`;
+                optionFilter.textContent = `${m.nombre} (${m.laboratorio})`;
                 filterMedicamentoSelect.appendChild(optionFilter);
             });
 
         } catch (error) {
-            console.error('Error al cargar consultas o medicamentos:', error);
-            alert('Error al cargar la lista de consultas o medicamentos.');
+            console.error('Error al cargar tratamientos o medicamentos:', error);
+            alert('Error al cargar la lista de tratamientos o medicamentos.');
         }
     }
 
@@ -193,8 +195,8 @@
         try {
             let url = API_BASE_URL;
             const params = new URLSearchParams();
-            if (filters.search) params.append('search', filters.search);
-            if (filters.consulta) params.append('consulta', filters.consulta);
+            if (filters.search) params.append('search', filters.search); // Search en dosis, frecuencia, duración
+            if (filters.tratamiento) params.append('tratamiento', filters.tratamiento);
             if (filters.medicamento) params.append('medicamento', filters.medicamento);
 
             if (params.toString()) {
@@ -206,7 +208,7 @@
             renderRecetas(recetas);
         } catch (error) {
             console.error('Error al cargar recetas:', error);
-            recetasTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Error al cargar las recetas.</td></tr>`;
+            recetasTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error al cargar las recetas.</td></tr>`;
         }
     }
 
@@ -217,19 +219,18 @@
     function renderRecetas(recetas) {
         recetasTableBody.innerHTML = '';
         if (recetas.length === 0) {
-            recetasTableBody.innerHTML = `<tr><td colspan="8" class="text-center">No hay recetas registradas.</td></tr>`;
+            recetasTableBody.innerHTML = `<tr><td colspan="7" class="text-center">No hay recetas registradas.</td></tr>`;
             return;
         }
         recetas.forEach(receta => {
             const row = recetasTableBody.insertRow();
             row.innerHTML = `
                 <td>${receta.id}</td>
-                <td>${receta.consulta || 'N/A'}</td>
-                <td>${receta.consulta_paciente_nombre_completo || 'N/A'}</td>
-                <td>${receta.consulta_medico_nombre_completo || 'N/A'}</td>
-                <td>${receta.medicamento_nombre_comercial || 'N/A'}</td>
-                <td>${receta.cantidad || 'N/A'}</td>
-                <td>${receta.fecha_receta || 'N/A'}</td>
+                <td>${receta.tratamiento || 'N/A'}</td> {# Mostrar ID del tratamiento #}
+                <td>${receta.medicamento_nombre || 'N/A'}</td> {# Asumiendo que la API devuelve el nombre del medicamento #}
+                <td>${receta.dosis || 'N/A'}</td>
+                <td>${receta.frecuencia || 'N/A'}</td>
+                <td>${receta.duracion || 'N/A'}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${receta.id}" data-bs-toggle="modal" data-bs-target="#recetaModal" data-mode="edit">
                         <i class="fas fa-edit"></i> Editar
@@ -262,11 +263,11 @@
             const response = await axios.get(`${API_BASE_URL}${currentRecetaId}/`);
             const receta = response.data;
             
-            consultaSelect.value = receta.consulta;
+            tratamientoSelect.value = receta.tratamiento;
             medicamentoSelect.value = receta.medicamento;
-            cantidadInput.value = receta.cantidad;
-            instruccionesInput.value = receta.instrucciones;
-            fechaRecetaInput.value = receta.fecha_receta;
+            dosisInput.value = receta.dosis;
+            frecuenciaInput.value = receta.frecuencia;
+            duracionInput.value = receta.duracion;
 
             recetaIdInput.value = receta.id;
         } catch (error) {
@@ -287,7 +288,7 @@
                 alert('Receta eliminada correctamente.');
                 loadRecetas({
                     search: searchInput.value,
-                    consulta: filterConsultaSelect.value,
+                    tratamiento: filterTratamientoSelect.value,
                     medicamento: filterMedicamentoSelect.value
                 });
             } catch (error) {
@@ -305,11 +306,11 @@
         event.preventDefault();
 
         const data = {
-            consulta: consultaSelect.value,
+            tratamiento: tratamientoSelect.value,
             medicamento: medicamentoSelect.value,
-            cantidad: cantidadInput.value,
-            instrucciones: instruccionesInput.value,
-            fecha_receta: fechaRecetaInput.value,
+            dosis: dosisInput.value,
+            frecuencia: frecuenciaInput.value,
+            duracion: duracionInput.value,
         };
 
         try {
@@ -324,7 +325,7 @@
             recetaForm.reset();
             loadRecetas({
                 search: searchInput.value,
-                consulta: filterConsultaSelect.value,
+                tratamiento: filterTratamientoSelect.value,
                 medicamento: filterMedicamentoSelect.value
             });
         } catch (error) {
@@ -347,9 +348,9 @@
             recetaModalLabel.textContent = 'Crear Nueva Receta';
             recetaForm.reset();
             recetaIdInput.value = '';
-            consultaSelect.value = '';
+            tratamientoSelect.value = '';
             medicamentoSelect.value = '';
-            fechaRecetaInput.value = new Date().toISOString().slice(0, 10); // Fecha actual por defecto
+            // No hay fecha ni instrucciones en el modelo de receta actual
         }
     });
 
@@ -357,7 +358,7 @@
     searchButton.addEventListener('click', () => {
         loadRecetas({
             search: searchInput.value,
-            consulta: filterConsultaSelect.value,
+            tratamiento: filterTratamientoSelect.value,
             medicamento: filterMedicamentoSelect.value
         });
     });
@@ -366,7 +367,7 @@
         if (event.key === 'Enter') {
             loadRecetas({
                 search: searchInput.value,
-                consulta: filterConsultaSelect.value,
+                tratamiento: filterTratamientoSelect.value,
                 medicamento: filterMedicamentoSelect.value
             });
         }
@@ -376,13 +377,13 @@
     applyFiltersButton.addEventListener('click', () => {
         loadRecetas({
             search: searchInput.value,
-            consulta: filterConsultaSelect.value,
+            tratamiento: filterTratamientoSelect.value,
             medicamento: filterMedicamentoSelect.value
         });
     });
 
 
-    // Cargar consultas, medicamentos y recetas al inicio
+    // Cargar tratamientos, medicamentos y recetas al inicio
     document.addEventListener('DOMContentLoaded', () => {
         loadForeignKeysForSelects();
         loadRecetas();

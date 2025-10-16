@@ -15,7 +15,7 @@
             <div class="card-body">
                 <div class="mb-3 d-flex justify-content-end">
                     <div class="input-group w-25">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, principio activo...">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre, laboratorio...">
                         <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
                     </div>
                 </div>
@@ -24,18 +24,17 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Nombre Comercial</th>
-                                <th>Principio Activo</th>
-                                <th>Presentación</th>
-                                <th>Dosis</th>
-                                <th>Fabricante</th>
+                                <th>Nombre</th>
+                                <th>Laboratorio</th>
+                                <th>Stock</th>
+                                <th>Precio Unitario</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="medicamentosTableBody">
                             <!-- Los datos se cargarán aquí con JavaScript -->
                             <tr>
-                                <td colspan="7" class="text-center">Cargando medicamentos...</td>
+                                <td colspan="6" class="text-center">Cargando medicamentos...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -57,24 +56,20 @@
                 <form id="medicamentoForm">
                     <input type="hidden" id="medicamentoId">
                     <div class="mb-3">
-                        <label for="nombreComercial" class="form-label">Nombre Comercial</label>
-                        <input type="text" class="form-control" id="nombreComercial" name="nombre_comercial" required>
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
                     </div>
                     <div class="mb-3">
-                        <label for="principioActivo" class="form-label">Principio Activo</label>
-                        <input type="text" class="form-control" id="principioActivo" name="principio_activo" required>
+                        <label for="laboratorio" class="form-label">Laboratorio</label>
+                        <input type="text" class="form-control" id="laboratorio" name="laboratorio" required>
                     </div>
                     <div class="mb-3">
-                        <label for="presentacion" class="form-label">Presentación (Ej: "Comprimidos 500mg", "Jarabe 100ml")</label>
-                        <input type="text" class="form-control" id="presentacion" name="presentacion" required>
+                        <label for="stock" class="form-label">Stock</label>
+                        <input type="number" class="form-control" id="stock" name="stock" required min="0">
                     </div>
                     <div class="mb-3">
-                        <label for="dosis" class="form-label">Dosis (Ej: "500 mg", "10 ml", "1 tableta")</label>
-                        <input type="text" class="form-control" id="dosis" name="dosis" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="fabricante" class="form-label">Fabricante (opcional)</label>
-                        <input type="text" class="form-control" id="fabricante" name="fabricante">
+                        <label for="precioUnitario" class="form-label">Precio Unitario</label>
+                        <input type="number" class="form-control" id="precioUnitario" name="precio_unitario" step="0.01" required min="0">
                     </div>
                 </form>
             </div>
@@ -95,11 +90,11 @@
     const medicamentoModalLabel = document.getElementById('medicamentoModalLabel');
     const medicamentoForm = document.getElementById('medicamentoForm');
     const medicamentoIdInput = document.getElementById('medicamentoId');
-    const nombreComercialInput = document.getElementById('nombreComercial');
-    const principioActivoInput = document.getElementById('principioActivo');
-    const presentacionInput = document.getElementById('presentacion');
-    const dosisInput = document.getElementById('dosis');
-    const fabricanteInput = document.getElementById('fabricante');
+    const nombreInput = document.getElementById('nombre'); // Renombrado
+    const laboratorioInput = document.getElementById('laboratorio'); // Renombrado
+    const stockInput = document.getElementById('stock'); // Nuevo
+    const precioUnitarioInput = document.getElementById('precioUnitario'); // Nuevo
+
     const saveMedicamentoBtn = document.getElementById('saveMedicamentoBtn');
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
@@ -126,7 +121,7 @@
             renderMedicamentos(medicamentos);
         } catch (error) {
             console.error('Error al cargar medicamentos:', error);
-            medicamentosTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error al cargar los medicamentos.</td></tr>`;
+            medicamentosTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar los medicamentos.</td></tr>`;
         }
     }
 
@@ -137,18 +132,17 @@
     function renderMedicamentos(medicamentos) {
         medicamentosTableBody.innerHTML = '';
         if (medicamentos.length === 0) {
-            medicamentosTableBody.innerHTML = `<tr><td colspan="7" class="text-center">No hay medicamentos registrados.</td></tr>`;
+            medicamentosTableBody.innerHTML = `<tr><td colspan="6" class="text-center">No hay medicamentos registrados.</td></tr>`;
             return;
         }
         medicamentos.forEach(medicamento => {
             const row = medicamentosTableBody.insertRow();
             row.innerHTML = `
                 <td>${medicamento.id}</td>
-                <td>${medicamento.nombre_comercial}</td>
-                <td>${medicamento.principio_activo}</td>
-                <td>${medicamento.presentacion}</td>
-                <td>${medicamento.dosis}</td>
-                <td>${medicamento.fabricante || 'N/A'}</td>
+                <td>${medicamento.nombre}</td>
+                <td>${medicamento.laboratorio || 'N/A'}</td>
+                <td>${medicamento.stock}</td>
+                <td>${medicamento.precio_unitario}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${medicamento.id}" data-bs-toggle="modal" data-bs-target="#medicamentoModal" data-mode="edit">
                         <i class="fas fa-edit"></i> Editar
@@ -180,11 +174,10 @@
         try {
             const response = await axios.get(`${API_BASE_URL}${currentMedicamentoId}/`);
             const medicamento = response.data;
-            nombreComercialInput.value = medicamento.nombre_comercial;
-            principioActivoInput.value = medicamento.principio_activo;
-            presentacionInput.value = medicamento.presentacion;
-            dosisInput.value = medicamento.dosis;
-            fabricanteInput.value = medicamento.fabricante;
+            nombreInput.value = medicamento.nombre;
+            laboratorioInput.value = medicamento.laboratorio;
+            stockInput.value = medicamento.stock;
+            precioUnitarioInput.value = medicamento.precio_unitario;
             medicamentoIdInput.value = medicamento.id;
         } catch (error) {
             console.error('Error al cargar datos de medicamento para editar:', error);
@@ -205,7 +198,7 @@
                 loadMedicamentos({ search: searchInput.value });
             } catch (error) {
                 console.error('Error al eliminar medicamento:', error);
-                alert('Error al eliminar el medicamento. Podría estar asociado a recetas.');
+                alert('Error al eliminar el medicamento. Podría estar asociado a otros registros.');
             }
         }
     }
@@ -218,11 +211,10 @@
         event.preventDefault();
 
         const data = {
-            nombre_comercial: nombreComercialInput.value,
-            principio_activo: principioActivoInput.value,
-            presentacion: presentacionInput.value,
-            dosis: dosisInput.value,
-            fabricante: fabricanteInput.value || null, // Enviar null si está vacío
+            nombre: nombreInput.value,
+            laboratorio: laboratorioInput.value,
+            stock: stockInput.value,
+            precio_unitario: precioUnitarioInput.value,
         };
 
         try {
