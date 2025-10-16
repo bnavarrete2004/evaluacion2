@@ -1,0 +1,425 @@
+{% extends 'api_clinica/base.html' %}
+
+{% block title %}Reportes de Laboratorio - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Gestión de Reportes de Laboratorio</h5>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#reporteLaboratorioModal" data-mode="create">
+                    <i class="fas fa-plus-circle me-2"></i>Nuevo Reporte
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <div class="d-flex">
+                        <label for="filterPaciente" class="form-label me-2 mb-0 align-self-center">Filtrar por Paciente:</label>
+                        <select class="form-select me-2" id="filterPaciente" style="width: 200px;">
+                            <option value="">Todos</option>
+                            <!-- Opciones de pacientes se cargarán aquí -->
+                        </select>
+                        <label for="filterTipoExamen" class="form-label me-2 mb-0 align-self-center">Tipo de Examen:</label>
+                        <input type="text" class="form-control me-2" id="filterTipoExamen" placeholder="Ej: Hemograma" style="width: 180px;">
+                        
+                        <label for="filterFechaSolicitud" class="form-label me-2 mb-0 align-self-center">Desde:</label>
+                        <input type="date" class="form-control me-2" id="filterFechaSolicitud" style="width: 150px;">
+                        
+                        <label for="filterFechaResultado" class="form-label me-2 mb-0 align-self-center">Hasta:</label>
+                        <input type="date" class="form-control me-2" id="filterFechaResultado" style="width: 150px;">
+                        
+                        <button class="btn btn-primary" type="button" id="applyFiltersButton">Aplicar Filtros</button>
+                    </div>
+                    <div class="input-group w-25">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Buscar por tipo, resultados, analista...">
+                        <button class="btn btn-primary" type="button" id="searchButton">Buscar</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Paciente</th>
+                                <th>Consulta Origen</th>
+                                <th>Tipo de Examen</th>
+                                <th>Fecha Solicitud</th>
+                                <th>Fecha Resultado</th>
+                                <th>Analizado Por</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportesTableBody">
+                            <!-- Los datos se cargarán aquí con JavaScript -->
+                            <tr>
+                                <td colspan="8" class="text-center">Cargando reportes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Reporte de Laboratorio -->
+<div class="modal fade" id="reporteLaboratorioModal" tabindex="-1" aria-labelledby="reporteLaboratorioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reporteLaboratorioModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reporteLaboratorioForm">
+                    <input type="hidden" id="reporteId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="paciente" class="form-label">Paciente</label>
+                            <select class="form-select" id="paciente" name="paciente" required>
+                                <!-- Opciones de pacientes se cargarán aquí -->
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="consultaOrigen" class="form-label">Consulta de Origen (Opcional)</label>
+                            <select class="form-select" id="consultaOrigen" name="consulta_origen">
+                                <option value="">Ninguna</option>
+                                <!-- Opciones de consultas se cargarán aquí -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tipoExamen" class="form-label">Tipo de Examen</label>
+                            <input type="text" class="form-control" id="tipoExamen" name="tipo_examen" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaSolicitud" class="form-label">Fecha de Solicitud</label>
+                            <input type="date" class="form-control" id="fechaSolicitud" name="fecha_solicitud" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fechaResultado" class="form-label">Fecha de Resultado (Opcional)</label>
+                        <input type="date" class="form-control" id="fechaResultado" name="fecha_resultado">
+                    </div>
+                    <div class="mb-3">
+                        <label for="resultados" class="form-label">Resultados</label>
+                        <textarea class="form-control" id="resultados" name="resultados" rows="5" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="analizadoPor" class="form-label">Analizado Por</label>
+                        <input type="text" class="form-control" id="analizadoPor" name="analizado_por">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="reporteLaboratorioForm" class="btn btn-primary" id="saveReporteBtn">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const API_BASE_URL = '/api/reportes-laboratorio/';
+    const PACIENTES_API_URL = '/api/pacientes/';
+    const CONSULTAS_API_URL = '/api/consultas/'; // Para cargar la consulta de origen
+
+    const reportesTableBody = document.getElementById('reportesTableBody');
+    const reporteLaboratorioModal = new bootstrap.Modal(document.getElementById('reporteLaboratorioModal'));
+    const reporteLaboratorioModalLabel = document.getElementById('reporteLaboratorioModalLabel');
+    const reporteLaboratorioForm = document.getElementById('reporteLaboratorioForm');
+    const reporteIdInput = document.getElementById('reporteId');
+    const pacienteSelect = document.getElementById('paciente');
+    const consultaOrigenSelect = document.getElementById('consultaOrigen');
+    const tipoExamenInput = document.getElementById('tipoExamen');
+    const fechaSolicitudInput = document.getElementById('fechaSolicitud');
+    const fechaResultadoInput = document.getElementById('fechaResultado');
+    const resultadosInput = document.getElementById('resultados');
+    const analizadoPorInput = document.getElementById('analizadoPor');
+    const saveReporteBtn = document.getElementById('saveReporteBtn');
+
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const filterPacienteSelect = document.getElementById('filterPaciente');
+    const filterTipoExamenInput = document.getElementById('filterTipoExamen');
+    const filterFechaSolicitudInput = document.getElementById('filterFechaSolicitud');
+    const filterFechaResultadoInput = document.getElementById('filterFechaResultado');
+    const applyFiltersButton = document.getElementById('applyFiltersButton');
+
+    let currentMode = 'create';
+    let currentReporteId = null;
+
+    /**
+     * @brief Carga pacientes y consultas para los selectores del formulario y filtro.
+     */
+    async function loadForeignKeysForSelects() {
+        try {
+            const [pacientesResponse, consultasResponse] = await Promise.all([
+                axios.get(PACIENTES_API_URL),
+                axios.get(CONSULTAS_API_URL)
+            ]);
+
+            const pacientes = pacientesResponse.data;
+            const consultas = consultasResponse.data;
+
+            // Limpiar y poblar select de pacientes (formulario y filtro)
+            pacienteSelect.innerHTML = '<option value="">Seleccione un paciente</option>';
+            filterPacienteSelect.innerHTML = '<option value="">Todos</option>';
+            pacientes.forEach(p => {
+                const optionForm = document.createElement('option');
+                optionForm.value = p.id;
+                optionForm.textContent = `${p.nombre} ${p.apellido} (${p.rut})`;
+                pacienteSelect.appendChild(optionForm);
+
+                const optionFilter = document.createElement('option');
+                optionFilter.value = p.id;
+                optionFilter.textContent = `${p.nombre} ${p.apellido}`;
+                filterPacienteSelect.appendChild(optionFilter);
+            });
+
+            // Limpiar y poblar select de consultas (formulario)
+            consultaOrigenSelect.innerHTML = '<option value="">Ninguna</option>';
+            consultas.forEach(c => {
+                const optionForm = document.createElement('option');
+                optionForm.value = c.id;
+                optionForm.textContent = `ID: ${c.id} - Paciente: ${c.paciente_nombre_completo} - Fecha: ${new Date(c.fecha_consulta).toLocaleString('es-CL')}`;
+                consultaOrigenSelect.appendChild(optionForm);
+            });
+
+        } catch (error) {
+            console.error('Error al cargar pacientes o consultas:', error);
+            alert('Error al cargar la lista de pacientes o consultas.');
+        }
+    }
+
+    /**
+     * @brief Carga los reportes de laboratorio desde la API y los renderiza en la tabla.
+     * @param {object} filters - Objeto con filtros para la API.
+     */
+    async function loadReportes(filters = {}) {
+        try {
+            let url = API_BASE_URL;
+            const params = new URLSearchParams();
+            if (filters.search) params.append('search', filters.search);
+            if (filters.paciente) params.append('paciente', filters.paciente);
+            if (filters.tipo_examen) params.append('tipo_examen', filters.tipo_examen); // Para filtrar por tipo de examen
+            // Filtros de fecha, asumiendo que el backend soporta 'fecha_solicitud__gte' y 'fecha_solicitud__lte'
+            if (filters.fecha_solicitud_gte) params.append('fecha_solicitud__gte', filters.fecha_solicitud_gte);
+            if (filters.fecha_solicitud_lte) params.append('fecha_solicitud__lte', filters.fecha_solicitud_lte);
+            if (filters.fecha_resultado_gte) params.append('fecha_resultado__gte', filters.fecha_resultado_gte);
+            if (filters.fecha_resultado_lte) params.append('fecha_resultado__lte', filters.fecha_resultado_lte);
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const response = await axios.get(url);
+            const reportes = response.data;
+            renderReportes(reportes);
+        } catch (error) {
+            console.error('Error al cargar reportes de laboratorio:', error);
+            reportesTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Error al cargar los reportes de laboratorio.</td></tr>`;
+        }
+    }
+
+    /**
+     * @brief Renderiza la lista de reportes de laboratorio en la tabla HTML.
+     * @param {Array} reportes - Lista de objetos de reporte de laboratorio.
+     */
+    function renderReportes(reportes) {
+        reportesTableBody.innerHTML = '';
+        if (reportes.length === 0) {
+            reportesTableBody.innerHTML = `<tr><td colspan="8" class="text-center">No hay reportes de laboratorio registrados.</td></tr>`;
+            return;
+        }
+        reportes.forEach(reporte => {
+            const row = reportesTableBody.insertRow();
+            
+            // Formatear fechas
+            const fechaSolicitud = new Date(reporte.fecha_solicitud).toLocaleDateString('es-CL');
+            const fechaResultado = reporte.fecha_resultado ? new Date(reporte.fecha_resultado).toLocaleDateString('es-CL') : 'N/A';
+            
+            row.innerHTML = `
+                <td>${reporte.id}</td>
+                <td>${reporte.paciente_nombre_completo || 'N/A'}</td>
+                <td>${reporte.consulta_origen ? `ID: ${reporte.consulta_origen} (${reporte.consulta_origen_fecha ? new Date(reporte.consulta_origen_fecha).toLocaleDateString('es-CL') : 'N/A'})` : 'N/A'}</td>
+                <td>${reporte.tipo_examen.substring(0, 50)}...</td>
+                <td>${fechaSolicitud}</td>
+                <td>${fechaResultado}</td>
+                <td>${reporte.analizado_por || 'N/A'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-info text-white me-2 edit-btn" data-id="${reporte.id}" data-bs-toggle="modal" data-bs-target="#reporteLaboratorioModal" data-mode="edit">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-btn" data-id="${reporte.id}">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                </td>
+            `;
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', handleEditClick);
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Editar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleEditClick(event) {
+        currentMode = 'edit';
+        currentReporteId = event.currentTarget.dataset.id;
+        reporteLaboratorioModalLabel.textContent = 'Editar Reporte de Laboratorio';
+
+        try {
+            const response = await axios.get(`${API_BASE_URL}${currentReporteId}/`);
+            const reporte = response.data;
+
+            pacienteSelect.value = reporte.paciente;
+            consultaOrigenSelect.value = reporte.consulta_origen || ''; // Si es null, selecciona la opción "Ninguna"
+            tipoExamenInput.value = reporte.tipo_examen;
+            fechaSolicitudInput.value = reporte.fecha_solicitud;
+            fechaResultadoInput.value = reporte.fecha_resultado || ''; // Puede ser null
+            resultadosInput.value = reporte.resultados;
+            analizadoPorInput.value = reporte.analizado_por;
+            reporteIdInput.value = reporte.id;
+        } catch (error) {
+            console.error('Error al cargar datos de reporte para editar:', error);
+            alert('Error al cargar los datos del reporte.');
+        }
+    }
+
+    /**
+     * @brief Maneja el clic en el botón de "Eliminar".
+     * @param {Event} event - El evento de clic.
+     */
+    async function handleDeleteClick(event) {
+        const id = event.currentTarget.dataset.id;
+        if (confirm(`¿Estás seguro de que quieres eliminar el reporte de laboratorio con ID ${id}?`)) {
+            try {
+                await axios.delete(`${API_BASE_URL}${id}/`);
+                alert('Reporte de laboratorio eliminado correctamente.');
+                loadReportes(getCurrentFilters()); // Recarga con filtros actuales
+            } catch (error) {
+                console.error('Error al eliminar reporte:', error);
+                alert('Error al eliminar el reporte de laboratorio.');
+            }
+        }
+    }
+
+    /**
+     * @brief Obtiene los filtros actuales de los campos de filtro.
+     * @returns {object} Un objeto con los filtros.
+     */
+    function getCurrentFilters() {
+        const filters = {
+            search: searchInput.value,
+            paciente: filterPacienteSelect.value,
+            tipo_examen: filterTipoExamenInput.value,
+            fecha_solicitud_gte: filterFechaSolicitudInput.value,
+            fecha_solicitud_lte: filterFechaResultadoInput.value, // Usamos fecha_resultado como "hasta" para fecha_solicitud
+            // Si quieres un filtro explícito para fecha de resultado, necesitarías dos campos de fecha para eso también.
+        };
+        // Eliminar filtros vacíos
+        for (const key in filters) {
+            if (filters[key] === '' || filters[key] === null) {
+                delete filters[key];
+            }
+        }
+        return filters;
+    }
+
+
+    /**
+     * @brief Maneja el envío del formulario para crear o actualizar un reporte.
+     * @param {Event} event - El evento de envío del formulario.
+     */
+    reporteLaboratorioForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const data = {
+            paciente: pacienteSelect.value,
+            consulta_origen: consultaOrigenSelect.value || null, // Si está vacío, enviar null
+            tipo_examen: tipoExamenInput.value,
+            fecha_solicitud: fechaSolicitudInput.value,
+            fecha_resultado: fechaResultadoInput.value || null, // Si está vacío, enviar null
+            resultados: resultadosInput.value,
+            analizado_por: analizadoPorInput.value,
+        };
+
+        try {
+            if (currentMode === 'create') {
+                await axios.post(API_BASE_URL, data);
+                alert('Reporte de laboratorio creado correctamente.');
+            } else { // currentMode === 'edit'
+                await axios.put(`${API_BASE_URL}${currentReporteId}/`, data);
+                alert('Reporte de laboratorio actualizado correctamente.');
+            }
+            reporteLaboratorioModal.hide();
+            reporteLaboratorioForm.reset();
+            loadReportes(getCurrentFilters()); // Recarga con filtros actuales
+        } catch (error) {
+            console.error('Error al guardar reporte:', error.response ? error.response.data : error.message);
+            const errorMessage = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Error desconocido';
+            alert(`Error al guardar el reporte de laboratorio: ${errorMessage}`);
+        }
+    });
+
+    /**
+     * @brief Reinicia el formulario y el modo del modal al abrirlo en modo "crear".
+     */
+    document.getElementById('reporteLaboratorioModal').addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const mode = button.getAttribute('data-mode');
+
+        if (mode === 'create') {
+            currentMode = 'create';
+            currentReporteId = null;
+            reporteLaboratorioModalLabel.textContent = 'Crear Nuevo Reporte de Laboratorio';
+            reporteLaboratorioForm.reset();
+            reporteIdInput.value = '';
+            
+            // Establecer valores por defecto si es necesario
+            pacienteSelect.value = '';
+            consultaOrigenSelect.value = '';
+            tipoExamenInput.value = '';
+            fechaSolicitudInput.value = new Date().toISOString().split('T')[0]; // Fecha actual por defecto (YYYY-MM-DD)
+            fechaResultadoInput.value = '';
+            resultadosInput.value = '';
+            analizadoPorInput.value = '';
+        }
+    });
+
+    // Manejar la búsqueda
+    searchButton.addEventListener('click', () => {
+        loadReportes(getCurrentFilters());
+    });
+
+    searchInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            loadReportes(getCurrentFilters());
+        }
+    });
+
+    // Manejar la aplicación de filtros
+    applyFiltersButton.addEventListener('click', () => {
+        loadReportes(getCurrentFilters());
+    });
+
+
+    // Cargar pacientes, consultas y reportes al inicio
+    document.addEventListener('DOMContentLoaded', () => {
+        loadForeignKeysForSelects();
+        loadReportes();
+    });
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}

@@ -145,3 +145,22 @@ class RecetaMedica(models.Model):
         verbose_name = "Receta Médica"
         verbose_name_plural = "Recetas Médicas"
         ordering = ['-id']
+        
+class ReporteLaboratorio(models.Model):
+    id = models.AutoField(primary_key=True)
+    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='reportes_laboratorio')
+    # Relación a la consulta que solicitó el reporte
+    consulta_origen = models.ForeignKey(ConsultaMedica, on_delete=models.SET_NULL, null=True, blank=True, related_name='reportes_laboratorio_solicitados')
+    tipo_examen = models.CharField(max_length=150) # Ej: "Hemograma completo", "Perfil lipídico", "Examen de orina"
+    fecha_solicitud = models.DateField(auto_now_add=True)
+    fecha_resultado = models.DateField(null=True, blank=True)
+    resultados = models.TextField() # Aquí se podría almacenar el texto del resultado o un enlace a un documento
+    analizado_por = models.CharField(max_length=100, blank=True, null=True) # Ej: Nombre del técnico o laboratorio
+
+    def __str__(self):
+        return f"Reporte de {self.tipo_examen} para {self.paciente.get_full_name()} (Solicitud: {self.fecha_solicitud})"
+
+    class Meta:
+        verbose_name = "Reporte de Laboratorio"
+        verbose_name_plural = "Reportes de Laboratorio"
+        ordering = ['-fecha_solicitud']

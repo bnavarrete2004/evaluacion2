@@ -11,4 +11,5 @@ urlpatterns = [
     path('tratamientos/', web_views.tratamiento_list_create_view, name='tratamientos_html'),
     path('medicamentos/', web_views.medicamento_list_create_view, name='medicamentos_html'),
     path('recetas/', web_views.receta_list_create_view, name='recetas_html'),
+    path('reportes-laboratorio/', web_views.reporte_laboratorio_list_create_view, name='reportes_laboratorio_html'),
 ]

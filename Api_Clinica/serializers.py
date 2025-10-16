@@ -6,7 +6,8 @@ from .models import (
     ConsultaMedica,
     Tratamiento,
     Medicamento,
-    RecetaMedica
+    RecetaMedica,
+    ReporteLaboratorio
 )
 
 # Serializer para Especialidad
@@ -97,3 +98,38 @@ class ConsultaMedicaSerializer(serializers.ModelSerializer):
     # En Medico:
     # def get_full_name(self):
     #     return f"{self.nombre} {self.apellido}"
+    
+    
+# Serializer para ReporteLaboratorio
+class ReporteLaboratorioSerializer(serializers.ModelSerializer):
+    # Campo de solo lectura para mostrar el nombre completo del paciente
+    paciente_nombre_completo = serializers.ReadOnlyField(source='paciente.get_full_name')
+
+    # Campo de solo lectura para mostrar la fecha de la consulta de origen
+    # Usamos CharField para un formato legible, o DateTimeField si la consulta_origen.fecha_consulta es un DateTime
+    consulta_origen_fecha = serializers.DateTimeField(source='consulta_origen.fecha_consulta', read_only=True, format="%Y-%m-%d %H:%M")
+    
+    # Campo de solo lectura para mostrar el motivo de la consulta de origen
+    consulta_origen_motivo = serializers.ReadOnlyField(source='consulta_origen.motivo')
+
+    class Meta:
+        model = ReporteLaboratorio
+        fields = [
+            'id',
+            'paciente', # ID del paciente
+            'paciente_nombre_completo', # Nombre legible del paciente
+            'consulta_origen', # ID de la consulta que originó el reporte (puede ser null)
+            'consulta_origen_fecha', # Fecha legible de la consulta de origen
+            'consulta_origen_motivo', # Motivo legible de la consulta de origen
+            'tipo_examen',
+            'fecha_solicitud',
+            'fecha_resultado',
+            'resultados',
+            'analizado_por',
+        ]
+        read_only_fields = [
+            'paciente_nombre_completo',
+            'consulta_origen_fecha',
+            'consulta_origen_motivo',
+            'fecha_solicitud', # Generalmente, la fecha de solicitud se establece automáticamente
+        ]

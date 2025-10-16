@@ -9,11 +9,10 @@ from .views import (
     ConsultaMedicaViewSet,
     TratamientoViewSet,
     MedicamentoViewSet,
-    RecetaMedicaViewSet
+    RecetaMedicaViewSet,
+    ReporteLaboratorioViewSet # ¡Importa el nuevo ViewSet aquí!
 )
 
-# Creamos un router para registrar nuestros ViewSets
-# DefaultRouter nos proporciona automáticamente las URLs para los listados y detalles
 router = DefaultRouter()
 router.register(r'especialidades', EspecialidadViewSet)
 router.register(r'medicos', MedicoViewSet)
@@ -22,8 +21,8 @@ router.register(r'consultas', ConsultaMedicaViewSet)
 router.register(r'tratamientos', TratamientoViewSet)
 router.register(r'medicamentos', MedicamentoViewSet)
 router.register(r'recetas', RecetaMedicaViewSet)
+router.register(r'reportes-laboratorio', ReporteLaboratorioViewSet) # ¡Registra el nuevo ViewSet aquí!
 
-# Las URLs generadas por el router se incluyen en urlpatterns
 urlpatterns = [
     path('', include(router.urls)),
 ]

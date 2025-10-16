@@ -10,7 +10,8 @@ from .models import (
     ConsultaMedica,
     Tratamiento,
     Medicamento,
-    RecetaMedica
+    RecetaMedica,
+    ReporteLaboratorio # ¡Importa tu nuevo modelo aquí!
 )
 from .serializers import (
     EspecialidadSerializer,
@@ -19,7 +20,8 @@ from .serializers import (
     ConsultaMedicaSerializer,
     TratamientoSerializer,
     MedicamentoSerializer,
-    RecetaMedicaSerializer
+    RecetaMedicaSerializer,
+    ReporteLaboratorioSerializer # ¡Importa tu nuevo serializador aquí!
 )
 
 # Puedes personalizar los permisos por ViewSet.
@@ -86,3 +88,29 @@ class RecetaMedicaViewSet(viewsets.ModelViewSet):
     filterset_fields = ['tratamiento', 'medicamento'] # Filtra por ID de tratamiento y medicamento
     search_fields = ['dosis', 'frecuencia', 'duracion']
     ordering_fields = ['id', 'tratamiento__id', 'medicamento__nombre']
+
+# ¡Aquí va el nuevo ViewSet para ReporteLaboratorio!
+class ReporteLaboratorioViewSet(viewsets.ModelViewSet):
+    queryset = ReporteLaboratorio.objects.all()
+    serializer_class = ReporteLaboratorioSerializer
+    permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    # Puedes filtrar por paciente, consulta_origen o tipo de examen
+    filterset_fields = ['paciente', 'consulta_origen', 'tipo_examen', 'fecha_solicitud', 'fecha_resultado']
+    # Puedes buscar en el tipo de examen, los resultados, el nombre del paciente o el motivo de la consulta de origen
+    search_fields = [
+        'tipo_examen',
+        'resultados',
+        'analizado_por',
+        'paciente__nombre',
+        'paciente__apellido',
+        'consulta_origen__motivo'
+    ]
+    # Permite ordenar por fecha de solicitud, fecha de resultado, tipo de examen o nombre del paciente
+    ordering_fields = [
+        'fecha_solicitud',
+        'fecha_resultado',
+        'tipo_examen',
+        'paciente__apellido',
+        'paciente__nombre'
+    ]

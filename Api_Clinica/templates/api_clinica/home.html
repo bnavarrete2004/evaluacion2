@@ -1,0 +1,50 @@
+{% extends 'api_clinica/base.html' %}
+{% load static %}
+
+{% block title %}Bienvenido a Salud Vital Ltda. - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 text-center">
+        <div class="card p-4 shadow-lg">
+            <div class="card-body">
+                <h1 class="card-title display-4 mb-4" style="color: #5B507A;">
+                    Bienvenido a <span class="fw-bold">Salud Vital Ltda.</span>
+                </h1>
+                <p class="card-text lead mb-4">
+                    Tu sistema integral de gestión de clínica.
+                    Aquí podrás administrar pacientes, médicos, especialidades,
+                    consultas, tratamientos y medicamentos de forma eficiente.
+                </p>
+                
+                <p class="mb-4">
+                    Utiliza el menú de navegación superior para acceder a las diferentes secciones del sistema.
+                </p>
+
+                <hr class="my-4">
+
+                <h3 class="mb-3" style="color: #5B618A;">¿Qué deseas hacer?</h3>
+                <div class="d-grid gap-2 col-md-8 mx-auto">
+                    <a href="{% url 'pacientes_html' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-injured me-2"></i>Gestionar Pacientes
+                    </a>
+                    <a href="{% url 'medicos_html' %}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-user-md me-2"></i>Gestionar Médicos
+                    </a>
+                    <a href="{% url 'consultas_html' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-notes-medical me-2"></i>Ver Consultas
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer text-muted mt-4">
+                "Cuidando tu salud, simplificando tu gestión."
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Font Awesome para los íconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}

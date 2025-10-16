@@ -52,3 +52,11 @@ def receta_list_create_view(request):
     Renderiza la plantilla para gestionar recetas médicas.
     """
     return render(request, 'api_clinica/recetas.html', {'title': 'Gestión de Recetas Médicas'})
+    
+    
+# Función para la vista de Reportes de Laboratorio (CRUD con HTML/JS)
+def reporte_laboratorio_list_create_view(request):
+    """
+    Renderiza la plantilla para gestionar reportes de laboratorio.
+    """
+    return render(request, 'api_clinica/reportes_laboratorio.html', {'title': 'Gestión de Reportes de Laboratorio'})
