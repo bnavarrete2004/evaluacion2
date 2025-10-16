@@ -4,6 +4,7 @@ from django.urls import path
 from . import web_views # Importamos el nuevo archivo de vistas
 
 urlpatterns = [
+    path('', web_views.home_view, name='home'),
     path('especialidades/', web_views.especialidad_list_create_view, name='especialidades_html'),
     path('medicos/', web_views.medico_list_create_view, name='medicos_html'),
     path('pacientes/', web_views.paciente_list_create_view, name='pacientes_html'),

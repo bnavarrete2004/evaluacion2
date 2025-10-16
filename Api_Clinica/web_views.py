@@ -60,3 +60,10 @@ def reporte_laboratorio_list_create_view(request):
     Renderiza la plantilla para gestionar reportes de laboratorio.
     """
     return render(request, 'api_clinica/reportes_laboratorio.html', {'title': 'Gestión de Reportes de Laboratorio'})
+
+# Función para tener un home bonito 
+def home_view(request):
+    """
+    Renderiza la plantilla de la página de inicio.
+    """
+    return render(request, 'api_clinica/home.html', {'title': 'Bienvenida'})
